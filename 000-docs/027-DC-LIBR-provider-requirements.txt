@@ -1,0 +1,33 @@
+# Multi-Provider AI Implementation Requirements
+
+# Core dependencies
+openai>=1.3.0          # OpenAI SDK (used by all providers via OpenAI-compatible APIs)
+python-dotenv>=1.0.0   # Environment variable management
+
+# Multi-provider frameworks (choose one or both)
+litellm>=1.0.0         # Universal LLM API wrapper with fallback support
+# llmswap>=0.1.0       # Alternative: simpler multi-provider wrapper (optional)
+
+# Optional: For advanced features
+pydantic>=2.0.0        # Data validation
+aiohttp>=3.8.0         # Async HTTP (for concurrent requests)
+pydantic-settings>=2.0.0  # Settings management
+
+# Optional: For local deployment monitoring
+requests>=2.31.0       # HTTP requests for health checks
+pyyaml>=6.0            # YAML config support
+
+# Optional: For caching and optimization
+redis>=4.0.0           # Redis for distributed caching
+sqlalchemy>=2.0.0      # Database ORM for usage tracking
+
+# Development/Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+black>=23.0.0          # Code formatting
+mypy>=1.0.0            # Type checking
+ruff>=0.1.0            # Linting
+
+# Documentation
+sphinx>=7.0.0          # Documentation generation

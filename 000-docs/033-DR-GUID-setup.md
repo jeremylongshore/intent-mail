@@ -223,7 +223,7 @@ feat(gmail): implement History API delta sync
 - Handle messageAdded, messageDeleted events
 - Add backoff for rate limits
 
-Closes: ai-devops-intent-solutions-b76.5.2
+Closes: hustle-b76.5.2
 ```
 
 ```

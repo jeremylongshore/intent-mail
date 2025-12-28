@@ -297,7 +297,7 @@ docker-compose up -d
 ```
 
 **For distribution:**
-See [DOCKER.md](DOCKER.md) for:
+See [Docker Guide](000-docs/003-OD-DEPL-docker-deployment.md) for:
 - Multi-platform builds (AMD64, ARM64)
 - Docker Hub publishing
 - Custom client connections
@@ -305,12 +305,12 @@ See [DOCKER.md](DOCKER.md) for:
 
 ### Cloud Deployment
 
-- **Local/Docker:** ✅ Recommended (see [DOCKER.md](DOCKER.md))
+- **Local/Docker:** ✅ Recommended (see [Docker Guide](000-docs/003-OD-DEPL-docker-deployment.md))
 - **Google Cloud Run:** ❌ Not recommended (MCP requires stdio, not HTTP)
 - **Compute Engine:** ✅ Works (VM with Docker)
 - **Kubernetes:** ✅ Works (GKE, K8s)
 
-See [SETUP.md](SETUP.md) for infrastructure details (Terraform, WIF).
+See [Setup Guide](000-docs/033-DR-GUID-setup.md) for infrastructure details (Terraform, WIF).
 
 ---
 
@@ -330,7 +330,7 @@ OAuth 2.0 only. No passwords stored.
 - Don't share OAuth credentials
 - Test rules with dry-run first
 
-Report vulnerabilities: [SECURITY.md](SECURITY.md)
+Report vulnerabilities: [Security Policy](000-docs/002-TQ-SECU-security-policy.md)
 
 ---
 
@@ -376,7 +376,7 @@ Yes - works with both personal Gmail and Google Workspace accounts.
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+We welcome contributions! See [Contributing Guide](000-docs/032-DR-GUID-contributing.md) for:
 - Code style guidelines
 - How to add new connectors
 - PR review process
@@ -411,12 +411,12 @@ TBD - To be determined once project reaches beta.
 
 ## Links
 
-- **Documentation**: `completed-docs/intent-mail/000-docs/`
+- **Documentation**: [`000-docs/`](000-docs/)
 - **GitHub**: https://github.com/intent-solutions-io/intent-mail
 - **Issues**: Use Beads task tracking (`bd list`)
-- **Security**: [SECURITY.md](SECURITY.md)
-- **FAQ**: [FAQ.md](FAQ.md) - Common questions answered
-- **Docker**: [DOCKER.md](DOCKER.md) - Deployment guide
+- **Security**: [Security Policy](000-docs/002-TQ-SECU-security-policy.md)
+- **FAQ**: [FAQ](000-docs/004-DR-FAQS-frequently-asked.md) - Common questions answered
+- **Docker**: [Docker Guide](000-docs/003-OD-DEPL-docker-deployment.md) - Deployment guide
 
 ---
 
