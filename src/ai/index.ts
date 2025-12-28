@@ -25,4 +25,7 @@ export { VertexAIProvider } from './vertex.js';
 export { OpenAIProvider } from './openai.js';
 export { AnthropicProvider } from './anthropic.js';
 export { OllamaProvider } from './ollama.js';
+export { GroqProvider, GROQ_MODELS } from './groq.js';
+export { CerebrasProvider, CEREBRAS_MODELS } from './cerebras.js';
+export { MultiProviderRouter, type RouterConfig, type RouterStats } from './router.js';
 export { NoOpProvider } from './noop.js';

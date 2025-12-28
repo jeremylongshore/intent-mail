@@ -79,8 +79,21 @@ export interface AIProvider {
 
 /**
  * Supported AI provider types
+ *
+ * Auto (recommended):
+ * - auto: Multi-provider router with automatic fallback (Groq → Cerebras → Ollama)
+ *
+ * Free tier providers:
+ * - groq: 14,400 req/day, fastest (280-1200 t/s)
+ * - cerebras: 1M tokens/day, very fast (3000+ t/s)
+ * - ollama: Unlimited local, offline capable
+ *
+ * Paid/API key required:
+ * - vertex: Google Cloud (requires GCP project)
+ * - openai: OpenAI API (requires API key)
+ * - anthropic: Claude API (requires API key)
  */
-export type ProviderType = 'vertex' | 'openai' | 'anthropic' | 'ollama' | 'none';
+export type ProviderType = 'auto' | 'vertex' | 'openai' | 'anthropic' | 'ollama' | 'groq' | 'cerebras' | 'none';
 
 /**
  * Provider configuration from user settings
@@ -120,6 +133,12 @@ export async function createProvider(config?: ProviderConfig): Promise<AIProvide
   const { NoOpProvider } = await import('./noop.js');
 
   switch (providerConfig.type) {
+    case 'auto': {
+      // Use MultiProviderRouter for automatic failover
+      const { MultiProviderRouter } = await import('./router.js');
+      return MultiProviderRouter.create();
+    }
+
     case 'vertex': {
       if (!providerConfig.gcpProject) {
         console.error('Vertex AI requires gcpProject. Falling back to NoOpProvider.');
@@ -157,6 +176,26 @@ export async function createProvider(config?: ProviderConfig): Promise<AIProvide
       return new OllamaProvider({
         host: providerConfig.ollamaHost ?? 'http://localhost:11434',
       });
+    }
+
+    case 'groq': {
+      const apiKey = await getSecureCredential('groq-api-key');
+      if (!apiKey) {
+        console.error('Groq requires API key. Run `intentmail config`. Falling back to NoOpProvider.');
+        return new NoOpProvider();
+      }
+      const { GroqProvider } = await import('./groq.js');
+      return new GroqProvider({ apiKey });
+    }
+
+    case 'cerebras': {
+      const apiKey = await getSecureCredential('cerebras-api-key');
+      if (!apiKey) {
+        console.error('Cerebras requires API key. Run `intentmail config`. Falling back to NoOpProvider.');
+        return new NoOpProvider();
+      }
+      const { CerebrasProvider } = await import('./cerebras.js');
+      return new CerebrasProvider({ apiKey });
     }
 
     case 'none':

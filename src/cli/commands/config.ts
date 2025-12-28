@@ -5,7 +5,7 @@ import keytar from 'keytar';
 const SERVICE_NAME = 'intentmail';
 
 interface IntentMailConfig {
-  aiProvider: 'vertex' | 'openai' | 'anthropic' | 'ollama' | 'none';
+  aiProvider: 'auto' | 'vertex' | 'openai' | 'anthropic' | 'ollama' | 'groq' | 'cerebras' | 'none';
   gcpProject?: string;
   gcpLocation?: string;
   ollamaHost?: string;
@@ -34,15 +34,53 @@ export async function runConfigCommand(): Promise<void> {
     message: 'Choose AI provider:',
     default: config.get('aiProvider'),
     choices: [
+      { name: 'Auto (RECOMMENDED - Free providers with fallback)', value: 'auto' as const },
+      { name: 'Groq (FREE - Fastest, 14K req/day)', value: 'groq' as const },
+      { name: 'Cerebras (FREE - 1M tokens/day, 3000 t/s)', value: 'cerebras' as const },
+      { name: 'Ollama (FREE - Local, Offline)', value: 'ollama' as const },
       { name: 'Vertex AI (Google Cloud)', value: 'vertex' as const },
       { name: 'OpenAI', value: 'openai' as const },
       { name: 'Anthropic (Claude)', value: 'anthropic' as const },
-      { name: 'Ollama (Local)', value: 'ollama' as const },
       { name: 'None (Manual only)', value: 'none' as const },
     ],
   });
 
   const updates: Partial<IntentMailConfig> = { aiProvider };
+
+  if (aiProvider === 'auto') {
+    console.log('\n  Auto mode uses multiple FREE providers with automatic fallback:');
+    console.log('  1. Groq (primary) - 14,400 req/day, fastest');
+    console.log('  2. Cerebras (fallback) - 1M tokens/day');
+    console.log('  3. Ollama (offline) - unlimited local\n');
+    console.log('  Configure at least one provider (Groq recommended):\n');
+
+    // Prompt for Groq API key
+    console.log('  Groq: Get FREE API key at https://console.groq.com');
+    const existingGroqKey = await getSecureCredential('groq-api-key');
+    const groqKeyPrompt = existingGroqKey ? ' (leave empty to keep existing)' : '';
+    const groqApiKey = await password({
+      message: `Groq API Key${groqKeyPrompt}:`,
+    });
+    if (groqApiKey) {
+      await setSecureCredential('groq-api-key', groqApiKey);
+      console.log('  Groq API key stored securely');
+    }
+
+    // Prompt for Cerebras API key
+    console.log('\n  Cerebras: Get FREE API key at https://inference.cerebras.ai');
+    const existingCerebrasKey = await getSecureCredential('cerebras-api-key');
+    const cerebrasKeyPrompt = existingCerebrasKey ? ' (leave empty to keep existing)' : '';
+    const cerebrasApiKey = await password({
+      message: `Cerebras API Key${cerebrasKeyPrompt}:`,
+    });
+    if (cerebrasApiKey) {
+      await setSecureCredential('cerebras-api-key', cerebrasApiKey);
+      console.log('  Cerebras API key stored securely');
+    }
+
+    console.log('\n  Ollama (local fallback) will be used automatically if installed.');
+    console.log('  Install Ollama: curl -fsSL https://ollama.ai/install.sh | sh\n');
+  }
 
   if (aiProvider === 'vertex') {
     updates.gcpProject = await input({
@@ -75,6 +113,34 @@ export async function runConfigCommand(): Promise<void> {
     });
     if (apiKey) {
       await setSecureCredential('anthropic-api-key', apiKey);
+      console.log('  API key stored securely in system keychain');
+    }
+  }
+
+  if (aiProvider === 'groq') {
+    console.log('\n  Get your FREE Groq API key at: https://console.groq.com');
+    console.log('  No credit card required. 14,400 requests/day free.\n');
+    const existingKey = await getSecureCredential('groq-api-key');
+    const keyPrompt = existingKey ? ' (leave empty to keep existing)' : '';
+    const apiKey = await password({
+      message: `Groq API Key${keyPrompt}:`,
+    });
+    if (apiKey) {
+      await setSecureCredential('groq-api-key', apiKey);
+      console.log('  API key stored securely in system keychain');
+    }
+  }
+
+  if (aiProvider === 'cerebras') {
+    console.log('\n  Get your FREE Cerebras API key at: https://inference.cerebras.ai');
+    console.log('  No credit card required. 1,000,000 tokens/day free.\n');
+    const existingKey = await getSecureCredential('cerebras-api-key');
+    const keyPrompt = existingKey ? ' (leave empty to keep existing)' : '';
+    const apiKey = await password({
+      message: `Cerebras API Key${keyPrompt}:`,
+    });
+    if (apiKey) {
+      await setSecureCredential('cerebras-api-key', apiKey);
       console.log('  API key stored securely in system keychain');
     }
   }
