@@ -3,24 +3,16 @@ import 'dotenv/config';
 import { ImapFlow } from 'imapflow';
 
 async function main() {
-  // Validate required environment variables
-  const user = process.env.GMAIL_USER_EMAIL;
-  const pass = process.env.GMAIL_APP_PASSWORD;
-
-  if (!user || !pass) {
-    console.error('Error: Missing required environment variables');
-    console.error('  GMAIL_USER_EMAIL - Your Gmail address');
-    console.error('  GMAIL_APP_PASSWORD - Gmail app password');
-    process.exit(1);
-  }
-
   const filter = process.argv[2] || 'cloudflare';
 
   const client = new ImapFlow({
     host: 'imap.gmail.com',
     port: 993,
     secure: true,
-    auth: { user, pass },
+    auth: {
+      user: process.env.GMAIL_USER_EMAIL!,
+      pass: process.env.GMAIL_APP_PASSWORD!,
+    },
     logger: false,
   });
 

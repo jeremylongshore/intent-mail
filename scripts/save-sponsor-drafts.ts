@@ -206,27 +206,16 @@ jeremy@intentsolutions.io`
 ];
 
 async function main() {
-  // Validate required environment variables
-  const user = process.env.GMAIL_USER_EMAIL;
-  const pass = process.env.GMAIL_APP_PASSWORD;
-
-  if (!user || !pass) {
-    console.error('Error: Missing required environment variables');
-    console.error('  GMAIL_USER_EMAIL - Your Gmail address');
-    console.error('  GMAIL_APP_PASSWORD - Gmail app password (not regular password)');
-    console.error('\nTo create an app password:');
-    console.error('  1. Go to https://myaccount.google.com/apppasswords');
-    console.error('  2. Generate a new app password for "Mail"');
-    process.exit(1);
-  }
-
   console.log('Connecting to Gmail IMAP...');
 
   const connection = await createImapConnection({
     host: 'imap.gmail.com',
     port: 993,
     secure: true,
-    auth: { user, pass },
+    auth: {
+      user: 'jeremy@intentsolutions.io',
+      pass: 'yevg kspk fpbb djns'
+    },
     logger: true
   });
 
@@ -236,7 +225,7 @@ async function main() {
 
     const result = await saveDrafts(
       connection,
-      user,
+      'jeremy@intentsolutions.io',
       drafts
     );
 
