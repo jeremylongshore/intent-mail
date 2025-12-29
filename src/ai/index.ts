@@ -29,3 +29,26 @@ export { GroqProvider, GROQ_MODELS } from './groq.js';
 export { CerebrasProvider, CEREBRAS_MODELS } from './cerebras.js';
 export { MultiProviderRouter, type RouterConfig, type RouterStats } from './router.js';
 export { NoOpProvider } from './noop.js';
+
+// Summarizer
+export {
+  summarizeEmail,
+  summarizeThread,
+  batchSummarize,
+  type EmailSummary,
+  type EmailSentiment,
+  type EmailCategory,
+} from './summarizer.js';
+
+// Draft Generator
+export {
+  generateDraft,
+  generateQuickReply,
+  suggestReply,
+  improveDraft,
+  generateDraftVariations,
+  type DraftTone,
+  type DraftIntent,
+  type DraftOptions,
+  type GeneratedDraft,
+} from './draft-generator.js';

@@ -34,6 +34,7 @@ import { mailApplyRuleTool } from './mcp/tools/mail-apply-rule.js';
 import { mailGetAuditLogTool } from './mcp/tools/mail-get-audit-log.js';
 import { mailRollbackTool } from './mcp/tools/mail-rollback.js';
 import { mailSummarizeTool } from './mcp/tools/mail-summarize.js';
+import { mailDraftTool } from './mcp/tools/mail-draft.js';
 import { initDatabase, closeDatabase } from './storage/database.js';
 import { runMigrations } from './storage/migrations.js';
 import { initSyncMetricsTable } from './storage/services/sync-metrics.js';
@@ -70,6 +71,7 @@ async function main() {
     mailGetAuditLogTool,
     mailRollbackTool,
     mailSummarizeTool,
+    mailDraftTool,
   ];
 
   // Create MCP server instance
