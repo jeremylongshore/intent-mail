@@ -52,3 +52,15 @@ export {
   type DraftOptions,
   type GeneratedDraft,
 } from './draft-generator.js';
+
+// Semantic Search
+export {
+  semanticSearch,
+  findSimilar,
+  parseQuery,
+  getSearchSuggestions,
+  type ParsedQuery,
+  type QueryIntent,
+  type SemanticSearchResult,
+  type SemanticSearchResults,
+} from './semantic-search.js';
