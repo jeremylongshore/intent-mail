@@ -64,3 +64,16 @@ export {
   type SemanticSearchResult,
   type SemanticSearchResults,
 } from './semantic-search.js';
+
+// Inbox Triage
+export {
+  triageEmail,
+  batchTriage,
+  quickTriage,
+  getInboxSummary,
+  type Priority,
+  type ActionType,
+  type UrgencySignal,
+  type TriageResult,
+  type BatchTriageResults,
+} from './inbox-triage.js';
