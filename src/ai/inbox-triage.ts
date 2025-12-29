@@ -282,7 +282,7 @@ function parseTriageResponse(text: string, email: StorageEmail): TriageResult {
     };
   } catch (error) {
     // Return a fallback result if parsing fails
-    console.error('[inbox-triage] Failed to parse LLM response:', error);
+    console.error('[inbox-triage] Failed to parse LLM response:', error instanceof Error ? error.message : String(error));
     return {
       emailId: email.id as number,
       providerMessageId: email.providerMessageId,
@@ -363,7 +363,7 @@ export async function batchTriage(emails: StorageEmail[]): Promise<BatchTriageRe
         const result = await triageEmail(email);
         results.push(result);
       } catch (error) {
-        console.error(`[inbox-triage] Failed to triage email ${email.id}:`, error);
+        console.error(`[inbox-triage] Failed to triage email ${email.id}:`, error instanceof Error ? error.message : String(error));
         results.push({
           emailId: email.id as number,
           providerMessageId: email.providerMessageId,
@@ -394,7 +394,7 @@ export async function batchTriage(emails: StorageEmail[]): Promise<BatchTriageRe
         try {
           return await triageEmail(email);
         } catch (error) {
-          console.error(`[inbox-triage] Failed to triage email ${email.id}:`, error);
+          console.error(`[inbox-triage] Failed to triage email ${email.id}:`, error instanceof Error ? error.message : String(error));
           return {
             emailId: email.id as number,
             providerMessageId: email.providerMessageId,
