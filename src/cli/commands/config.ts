@@ -1,8 +1,15 @@
 import { select, input, password } from '@inquirer/prompts';
 import Conf from 'conf';
-import keytar from 'keytar';
 
 const SERVICE_NAME = 'intentmail';
+
+// Keytar is optional - falls back to config file if not available
+let keytar: typeof import('keytar') | null = null;
+try {
+  keytar = await import('keytar');
+} catch {
+  // libsecret not installed - will use config file instead
+}
 
 interface IntentMailConfig {
   aiProvider: 'auto' | 'vertex' | 'openai' | 'anthropic' | 'ollama' | 'groq' | 'cerebras' | 'none';
@@ -20,11 +27,20 @@ const config = new Conf<IntentMailConfig>({
 });
 
 async function setSecureCredential(key: string, value: string): Promise<void> {
-  await keytar.setPassword(SERVICE_NAME, key, value);
+  if (keytar) {
+    await keytar.setPassword(SERVICE_NAME, key, value);
+  } else {
+    // Fallback: store in config (less secure but works without libsecret)
+    config.set(`credentials.${key}` as any, value);
+  }
 }
 
 export async function getSecureCredential(key: string): Promise<string | null> {
-  return keytar.getPassword(SERVICE_NAME, key);
+  if (keytar) {
+    return keytar.getPassword(SERVICE_NAME, key);
+  }
+  // Fallback: read from config
+  return config.get(`credentials.${key}` as any) || null;
 }
 
 export async function runConfigCommand(): Promise<void> {
