@@ -213,7 +213,7 @@ function analyzeDraft(body: string): {
 
   // Check for closing
   const closingPatterns = /(best|regards|sincerely|thanks|cheers|take care|talk soon)/im;
-  const hasClosing = closingPatterns.test(body.substring(-200));
+  const hasClosing = closingPatterns.test(body.slice(-200));
 
   // Check for call to action
   const ctaPatterns = /(please|could you|would you|let me know|can you|need|require|by|deadline)/im;
@@ -301,7 +301,7 @@ Respond with JSON:
       confidence: c.confidence,
     }));
   } catch (error) {
-    console.error('[compose-suggestions] Completion failed:', error);
+    console.error('[compose-suggestions] Completion failed:', error instanceof Error ? error.message : String(error));
     return [];
   }
 }
@@ -359,7 +359,7 @@ If no errors found, return: { "corrections": [] }`;
       confidence: c.confidence,
     }));
   } catch (error) {
-    console.error('[compose-suggestions] Grammar check failed:', error);
+    console.error('[compose-suggestions] Grammar check failed:', error instanceof Error ? error.message : String(error));
     return [];
   }
 }
@@ -424,7 +424,7 @@ Respond with JSON:
         confidence: s.confidence,
       }));
   } catch (error) {
-    console.error('[compose-suggestions] Subject suggestion failed:', error);
+    console.error('[compose-suggestions] Subject suggestion failed:', error instanceof Error ? error.message : String(error));
     return [];
   }
 }
@@ -481,7 +481,7 @@ Respond with JSON:
         confidence: s.confidence,
       }));
   } catch (error) {
-    console.error('[compose-suggestions] Greeting suggestion failed:', error);
+    console.error('[compose-suggestions] Greeting suggestion failed:', error instanceof Error ? error.message : String(error));
     // Return some defaults
     return [
       { type: 'greeting', text: 'Hi,', confidence: 0.7 },
@@ -539,7 +539,7 @@ Respond with JSON:
         confidence: s.confidence,
       }));
   } catch (error) {
-    console.error('[compose-suggestions] Closing suggestion failed:', error);
+    console.error('[compose-suggestions] Closing suggestion failed:', error instanceof Error ? error.message : String(error));
     // Return some defaults
     return [
       { type: 'closing', text: `Best regards,\n${senderName}`, confidence: 0.7 },
@@ -605,7 +605,7 @@ If the draft already matches the target tone well, return: { "suggestions": [] }
         confidence: s.confidence,
       }));
   } catch (error) {
-    console.error('[compose-suggestions] Tone suggestion failed:', error);
+    console.error('[compose-suggestions] Tone suggestion failed:', error instanceof Error ? error.message : String(error));
     return [];
   }
 }
