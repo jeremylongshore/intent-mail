@@ -77,3 +77,19 @@ export {
   type TriageResult,
   type BatchTriageResults,
 } from './inbox-triage.js';
+
+// Compose Suggestions
+export {
+  getCompletions,
+  checkGrammar,
+  suggestSubjects,
+  suggestGreetings,
+  suggestClosings,
+  suggestToneAdjustments,
+  getComposeSuggestions,
+  getInlineSuggestion,
+  type SuggestionType,
+  type Suggestion,
+  type ComposeContext,
+  type ComposeSuggestionsResult,
+} from './compose-suggestions.js';
