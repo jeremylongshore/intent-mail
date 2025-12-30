@@ -27,5 +27,5 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/web/**/*"]
 }
