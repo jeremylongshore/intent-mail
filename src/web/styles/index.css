@@ -1,0 +1,613 @@
+/**
+ * IntentMail Web Dashboard Styles
+ *
+ * Responsive CSS for the web interface.
+ *
+ * E4.S4.3: Responsive Inbox UI
+ */
+
+/* CSS Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Variables */
+:root {
+  --color-primary: #5865f2;
+  --color-primary-dark: #4752c4;
+  --color-secondary: #4f545c;
+  --color-danger: #ed4245;
+  --color-success: #57f287;
+  --color-warning: #fee75c;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f2f3f5;
+  --color-text: #2e3338;
+  --color-text-muted: #747f8d;
+  --color-border: #e3e5e8;
+  --radius: 8px;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #36393f;
+    --color-bg-secondary: #2f3136;
+    --color-text: #dcddde;
+    --color-text-muted: #96989d;
+    --color-border: #40444b;
+  }
+}
+
+/* Base */
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  color: white;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+}
+
+.btn-icon.starred {
+  color: var(--color-warning);
+}
+
+/* App Layout */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-header h1 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.app-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.app-nav button {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.app-nav button:hover,
+.app-nav button.active {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.app-main {
+  flex: 1;
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Loading */
+.app-loading,
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 16px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Login */
+.app-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  text-align: center;
+  padding: 48px;
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.login-card h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.login-card p {
+  color: var(--color-text-muted);
+  margin-bottom: 24px;
+}
+
+/* Inbox */
+.inbox {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.inbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.inbox-header h2 {
+  font-size: 24px;
+}
+
+.inbox-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.inbox-empty,
+.inbox.error {
+  text-align: center;
+  padding: 48px;
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius);
+}
+
+/* Email List */
+.email-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.email-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  padding: 16px;
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.email-item:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow);
+}
+
+.email-item.unread {
+  border-left: 3px solid var(--color-primary);
+  font-weight: 500;
+}
+
+.email-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.email-from {
+  font-weight: 500;
+  grid-column: 2;
+}
+
+.email-subject {
+  grid-column: 2;
+  font-size: 15px;
+}
+
+.email-snippet {
+  grid-column: 2;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.email-date {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  grid-column: 3;
+  grid-row: 1;
+}
+
+/* Pagination */
+.inbox-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+/* Email Detail */
+.email-detail {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.email-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.email-detail-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.email-content {
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+.email-content .email-subject {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.email-meta {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.email-from-to {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.email-address {
+  color: var(--color-text-muted);
+  margin-left: 4px;
+}
+
+.email-body {
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.email-attachments {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.email-attachments h3 {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.email-attachments ul {
+  list-style: none;
+}
+
+.email-attachments a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.email-attachments a:hover {
+  text-decoration: underline;
+}
+
+/* Compose */
+.compose {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.compose-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.compose-header h2 {
+  flex: 1;
+}
+
+.compose-error {
+  background-color: var(--color-danger);
+  color: white;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+
+.compose-form {
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+.form-field {
+  margin-bottom: 16px;
+}
+
+.form-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.form-field input,
+.form-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.form-field textarea {
+  resize: vertical;
+  min-height: 200px;
+}
+
+.compose-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* AI Panel */
+.ai-panel {
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 2px solid var(--color-primary);
+}
+
+.ai-panel h3 {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.ai-panel textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  resize: vertical;
+}
+
+.ai-options {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ai-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.ai-options select {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Search */
+.search {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.search-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.search-controls {
+  margin-bottom: 24px;
+}
+
+.search-input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.search-mode-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.search-error {
+  background-color: var(--color-danger);
+  color: white;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+
+.search-empty {
+  text-align: center;
+  padding: 48px;
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius);
+}
+
+.search-hint {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.results-count {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 12px;
+}
+
+.relevance-score {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.match-reason {
+  grid-column: 2;
+  font-size: 12px;
+  color: var(--color-primary);
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .app-main {
+    padding: 16px;
+  }
+
+  .inbox-header,
+  .email-detail-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .email-item {
+    grid-template-columns: 1fr auto;
+  }
+
+  .email-actions {
+    grid-column: 2;
+    grid-row: 1 / 4;
+  }
+
+  .email-from,
+  .email-subject,
+  .email-snippet {
+    grid-column: 1;
+  }
+}
