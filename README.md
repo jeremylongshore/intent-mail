@@ -1,27 +1,29 @@
 # IntentMail
 
-MCP server for programmatic email access via Gmail/Outlook APIs. Provides tools for search, automation rules, and audit logging.
+Multi-surface email platform with MCP server, Discord bot, and web dashboard. AI-powered email management with team collaboration features.
 
 ## What This Is
 
-MCP server with 19 tools for email operations:
-- Gmail/Outlook connector (OAuth, delta sync)
-- Email search, threading, labels, attachments
-- Automation rules with dry-run and rollback
-- SQLite storage with FTS5 full-text search
-- Complete audit trail of all actions
+A complete email management platform:
+- **MCP Server**: 19 tools for programmatic email access
+- **Discord Bot**: Slash commands for inbox management
+- **Web Dashboard**: React/PWA for browser-based access
+- **Team Collaboration**: Shared inboxes, assignments, analytics
+- **AI Features**: Smart drafts, semantic search, inbox triage
 
 ---
 
 ## Status
 
-Alpha. Working but needs testing.
+**v0.4.0** - All core epics complete.
 
 **Implemented:**
 - Gmail connector (OAuth, History API delta sync)
-- 19 MCP tools
-- Rules engine with audit log + rollback
-- SQLite storage with FTS5 search
+- 19 MCP tools with rules engine + rollback
+- Discord bot with slash commands
+- Web dashboard with PWA support
+- Team collaboration (shared inboxes, assignments)
+- AI features (drafts, semantic search, triage)
 
 **Not done:**
 - Outlook connector OAuth testing
