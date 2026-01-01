@@ -45,7 +45,10 @@ export {
   detectBestTarget,
 } from './registry.js';
 
-// Adapters
-export { InkAdapter, createInkAdapter } from './ink-adapter.js';
-export { ReacordAdapter, createReacordAdapter, isDiscordAvailable } from './reacord-adapter.js';
-export { DomAdapter, createDomAdapter, isWebAvailable } from './dom-adapter.js';
+// Platform-specific adapters (loaded dynamically when their platform is detected)
+// These are excluded from the main build to reduce dependencies:
+// - ink-adapter.ts: Terminal rendering (requires: ink, react)
+// - reacord-adapter.ts: Discord rendering (requires: discord.js, reacord)
+// - dom-adapter.ts: Web rendering (built separately via Vite)
+//
+// Use getAdapterRegistry() to access adapters at runtime.

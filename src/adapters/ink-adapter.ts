@@ -7,6 +7,17 @@
  * E1.S1.1: Adapter Pattern Foundation
  */
 
+// Type declarations for Node.js globals (makes file self-contained)
+declare const process: {
+  stdout: { isTTY: boolean };
+  exit: (code: number) => never;
+};
+declare const console: {
+  log: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+};
+
 import { render } from 'ink';
 import React from 'react';
 import type { EmailConnector } from '../agents/email-connector.js';

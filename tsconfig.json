@@ -27,5 +27,5 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/web/**/*"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/web/**/*", "src/adapters/ink-adapter.ts", "src/adapters/dom-adapter.ts", "src/adapters/reacord-adapter.ts"]
 }
