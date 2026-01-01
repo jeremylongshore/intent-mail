@@ -1,6 +1,6 @@
 {
   "name": "@intentsolutionsio/intentmail",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "AI-powered email CLI with TUI - supports Vertex AI, OpenAI, Anthropic, Ollama",
   "type": "module",
   "main": "dist/index.js",
