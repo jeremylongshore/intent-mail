@@ -8,6 +8,13 @@
  * E2.S2.1-S2.7: Full Discord Integration
  */
 
+// Type declarations for Node.js globals
+declare const console: {
+  log: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+};
+
 import type { EmailConnector } from '../agents/email-connector.js';
 import type {
   PlatformAdapter,

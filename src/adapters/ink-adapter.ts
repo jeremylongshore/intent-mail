@@ -75,7 +75,7 @@ export class InkAdapter implements PlatformAdapter {
     );
 
     // Wait for app to exit
-    this.instance.waitUntilExit().catch((err) => {
+    this.instance.waitUntilExit().catch((err: unknown) => {
       console.error('App error:', err);
       process.exit(1);
     });
