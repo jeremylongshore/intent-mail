@@ -5,7 +5,7 @@
  */
 
 import { z } from 'zod';
-import { addLabels, getEmailById } from '../../storage/services/email-storage.js';
+import { addLabels, removeLabels, getEmailById } from '../../storage/services/email-storage.js';
 
 /**
  * Input schema for mail_apply_label
@@ -91,7 +91,7 @@ export const mailApplyLabelTool = {
       }
     }
 
-    // Remove labels (by updating with filtered list)
+    // Remove labels
     if (input.removeLabels && input.removeLabels.length > 0) {
       for (const label of input.removeLabels) {
         if (currentLabels.has(label)) {
@@ -100,10 +100,9 @@ export const mailApplyLabelTool = {
         }
       }
 
-      // If we removed labels, we need to update the email
-      // Since we don't have a removeLabels function, we'll need to fetch and check
-      // For now, just track what we tried to remove
-      // TODO: Implement removeLabels in email-storage.ts
+      if (labelsRemoved.length > 0) {
+        await removeLabels(input.emailId, labelsRemoved);
+      }
     }
 
     // Get updated email
