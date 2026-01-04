@@ -18,6 +18,7 @@ import type {
   Theme,
   KeyBinding,
 } from './types.js';
+import { useEmailStore } from './email-store.js';
 
 /**
  * Default key bindings
@@ -295,19 +296,99 @@ export const useUIStore = create<UIState & UIActions>()(
           draft: { ...state.draft, isDirty: false, lastSaved: new Date().toISOString() },
         })),
 
-      startReply: (_emailId, _all = false) => {
-        // TODO: Populate from email store when integrated
+      startReply: (emailId, all = false) => {
+        // Get email from email store
+        const emailState = useEmailStore.getState();
+        const email = emailState.emails.find(e => e.providerMessageId === emailId)
+          || emailState.currentEmail;
+
+        if (!email) {
+          // Fallback to empty compose if email not found
+          set({
+            currentView: 'compose',
+            draft: { ...emptyDraft, isDirty: false },
+          });
+          return;
+        }
+
+        // Build recipient list
+        const fromAddress = typeof email.from === 'string'
+          ? email.from
+          : email.from.address;
+
+        let toAddresses = [fromAddress];
+
+        // For reply-all, include all original recipients (except self)
+        if (all && email.to) {
+          const additionalRecipients = email.to
+            .map(t => typeof t === 'string' ? t : t.address)
+            .filter(addr => addr !== fromAddress);
+          toAddresses = [...toAddresses, ...additionalRecipients];
+        }
+
+        // Build subject with Re: prefix
+        const subject = email.subject.startsWith('Re: ')
+          ? email.subject
+          : `Re: ${email.subject}`;
+
         set({
           currentView: 'compose',
-          draft: { ...emptyDraft, isDirty: false },
+          draft: {
+            ...emptyDraft,
+            to: toAddresses,
+            cc: all && email.cc ? email.cc.map(c => typeof c === 'string' ? c : c.address) : [],
+            subject,
+            replyTo: email,
+            isDirty: false,
+          },
         });
       },
 
-      startForward: (_emailId) => {
-        // TODO: Populate from email store when integrated
+      startForward: (emailId) => {
+        // Get email from email store
+        const emailState = useEmailStore.getState();
+        const email = emailState.emails.find(e => e.providerMessageId === emailId)
+          || emailState.currentEmail;
+
+        if (!email) {
+          // Fallback to empty compose if email not found
+          set({
+            currentView: 'compose',
+            draft: { ...emptyDraft, isDirty: false },
+          });
+          return;
+        }
+
+        // Build subject with Fwd: prefix
+        const subject = email.subject.startsWith('Fwd: ')
+          ? email.subject
+          : `Fwd: ${email.subject}`;
+
+        // Build forwarded message body
+        const fromStr = typeof email.from === 'string'
+          ? email.from
+          : email.from.name
+            ? `${email.from.name} <${email.from.address}>`
+            : email.from.address;
+
+        const forwardedBody = `
+---------- Forwarded message ---------
+From: ${fromStr}
+Date: ${email.date}
+Subject: ${email.subject}
+To: ${email.to.map(t => typeof t === 'string' ? t : t.address).join(', ')}
+
+${email.bodyText || email.snippet || ''}
+`;
+
         set({
           currentView: 'compose',
-          draft: { ...emptyDraft, isDirty: false },
+          draft: {
+            ...emptyDraft,
+            subject,
+            body: forwardedBody,
+            isDirty: false,
+          },
         });
       },
 
