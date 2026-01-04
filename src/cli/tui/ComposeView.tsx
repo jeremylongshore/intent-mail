@@ -3,6 +3,7 @@ import TextInput from 'ink-text-input';
 import Spinner from 'ink-spinner';
 import { useState } from 'react';
 import type { Email, EmailConnector, EmailDraft } from '../../agents/email-connector.js';
+import { generateDraft, suggestReply, type DraftTone } from '../../ai/index.js';
 
 interface ComposeViewProps {
   useAI: boolean;
@@ -98,9 +99,47 @@ export function ComposeView({ useAI, replyTo, connector, onBack }: ComposeViewPr
     setAiGenerating(true);
     setError(null);
     try {
-      // TODO: Generate draft using configured AI provider
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setBody('This is an AI-generated draft. Configure your AI provider with `intentmail config`.');
+      let generatedBody: string;
+
+      if (replyTo) {
+        // For replies, use suggestReply with thread context
+        const storageEmail = {
+          id: 0,
+          accountId: 0,
+          providerMessageId: replyTo.id,
+          threadId: replyTo.threadId,
+          from: { address: replyTo.from.email, name: replyTo.from.name },
+          to: replyTo.to.map(t => ({ address: t.email, name: t.name })),
+          subject: replyTo.subject,
+          bodyText: replyTo.body,
+          snippet: replyTo.snippet,
+          date: replyTo.date.toISOString(),
+          labels: replyTo.labels,
+          flags: [],
+          hasAttachments: replyTo.attachments.length > 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        const result = await suggestReply([storageEmail], 'professional' as DraftTone);
+        generatedBody = result.body;
+      } else {
+        // For new emails, generate based on subject context
+        const result = await generateDraft({
+          to,
+          subject: subject || undefined,
+          intent: 'inform',
+          tone: 'professional',
+          context: subject ? `Write an email about: ${subject}` : undefined,
+          length: 'medium',
+        });
+        generatedBody = result.body;
+        // Use suggested subject if none provided
+        if (!subject && result.suggestedSubject) {
+          setSubject(result.suggestedSubject);
+        }
+      }
+
+      setBody(generatedBody);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate AI draft');
     } finally {
