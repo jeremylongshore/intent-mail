@@ -60,7 +60,10 @@ jobs:
           docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:latest
 
       - name: Deploy to Cloud Run
-        if: steps.check_dockerfile.outputs.dockerfile_exists == 'true'
+        # SKIP: MCP server uses stdio transport, not HTTP
+        # Cloud Run requires HTTP server on PORT 8080
+        # See README.md: "Google Cloud Run: ❌ Not recommended (MCP requires stdio, not HTTP)"
+        if: false
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image=${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
@@ -76,9 +79,11 @@ jobs:
         if: always()
         run: |
           if [ "${{ steps.check_dockerfile.outputs.dockerfile_exists }}" == "true" ]; then
-            echo "✅ Deployment completed"
-            echo "🔗 Service URL: https://${{ env.SERVICE_NAME }}-$(gcloud projects describe ${{ env.GCP_PROJECT_ID }} --format='value(projectNumber)').${{ env.GCP_REGION }}.run.app"
+            echo "✅ Docker image built and pushed to Artifact Registry"
+            echo "📦 Image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+            echo ""
+            echo "ℹ️  Cloud Run deployment skipped (MCP uses stdio, not HTTP)"
+            echo "📖 See README.md for deployment options (Docker, Compute Engine, K8s)"
           else
-            echo "📋 Deployment skipped - project in Phase 2 (planning)"
-            echo "🔨 Implementation starts in Phase 3 with MCP server development"
+            echo "📋 Build skipped - no Dockerfile found"
           fi
