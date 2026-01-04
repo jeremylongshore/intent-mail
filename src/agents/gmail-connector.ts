@@ -10,7 +10,6 @@
  */
 
 import { google, gmail_v1 } from 'googleapis';
-import { JWT } from 'google-auth-library';
 import { GmailMessage, GmailMessagePart, GmailSystemLabel } from '../connectors/gmail/types.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
@@ -231,7 +230,7 @@ export class GmailEmailConnector implements EmailConnector {
     }
 
     // Create JWT client with domain-wide delegation
-    const jwtClient = new JWT({
+    const jwtClient = new google.auth.JWT({
       email: serviceAccount.client_email,
       key: serviceAccount.private_key,
       scopes: GMAIL_SCOPES,

@@ -6,8 +6,10 @@
 
 import { randomBytes, createHash } from 'crypto';
 import { google } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library';
 import { GmailOAuthConfig, GmailTokens } from './types.js';
+
+// Use OAuth2Client type from googleapis to avoid version conflicts
+type OAuth2Client = InstanceType<typeof google.auth.OAuth2>;
 
 /**
  * Required Gmail API scopes
