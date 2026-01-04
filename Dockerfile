@@ -1,6 +1,9 @@
 # Multi-stage build for IntentMail MCP Server
 FROM node:20-alpine AS builder
 
+# Install build dependencies for native modules (better-sqlite3, keytar)
+RUN apk add --no-cache python3 make g++ libsecret-dev
+
 WORKDIR /app
 
 # Copy package files
@@ -8,7 +11,7 @@ COPY package*.json ./
 COPY tsconfig.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm ci --ignore-scripts=false
 
 # Copy source code
 COPY src/ ./src/
@@ -19,13 +22,18 @@ RUN npm run build
 # Production image
 FROM node:20-alpine
 
+# Install runtime dependencies for native modules
+RUN apk add --no-cache libsecret
+
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --production
+# Install build deps, production dependencies, then remove build deps
+RUN apk add --no-cache --virtual .build-deps python3 make g++ libsecret-dev && \
+    npm ci --omit=dev && \
+    apk del .build-deps
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
