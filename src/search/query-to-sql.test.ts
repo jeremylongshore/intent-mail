@@ -214,9 +214,9 @@ describe('astToSql - complex queries', () => {
     expect(sql.whereClause).toContain('has_attachments');
     expect(sql.whereClause).toContain('size_bytes');
     expect(sql.whereClause).toContain('date(e.date)');
-    // from: adds 1 param (for from_address LIKE), larger: adds 1, after: adds 1 = 3
+    // from: adds 2 params (for from_address and from_name), larger: adds 1, after: adds 1 = 4
     // has:attachment adds no params
-    expect(sql.params.length).toBe(3);
+    expect(sql.params.length).toBe(4);
   });
 
   it('produces valid SQL with no conditions for empty query', () => {
@@ -231,8 +231,10 @@ describe('astToSql - parameter ordering', () => {
   it('maintains parameter order matching placeholders', () => {
     const sql = querySql('from:alice to:bob subject:meeting');
     // Params should be in order of conditions
+    // from: generates 2 params (for from_address and from_name)
     expect(sql.params[0]).toBe('%alice%');
-    expect(sql.params[1]).toBe('%bob%');
-    expect(sql.params[2]).toBe('%meeting%');
+    expect(sql.params[1]).toBe('%alice%'); // Duplicate for from_name
+    expect(sql.params[2]).toBe('%bob%');
+    expect(sql.params[3]).toBe('%meeting%');
   });
 });

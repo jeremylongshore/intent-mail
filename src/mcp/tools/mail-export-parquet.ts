@@ -5,6 +5,7 @@
  */
 
 import { z } from 'zod';
+import * as path from 'path';
 import {
   initDuckDB,
   exportEmailsToParquet,
@@ -12,6 +13,36 @@ import {
   listExports,
 } from '../../analytics/index.js';
 import { syncAllEmails } from '../../analytics/sync-to-duckdb.js';
+
+/**
+ * Default safe export directory
+ */
+const SAFE_EXPORT_BASE = './data/exports';
+
+/**
+ * Validate output directory to prevent path traversal attacks
+ */
+function validateOutputDir(outputDir: string | undefined): string {
+  if (!outputDir) {
+    return SAFE_EXPORT_BASE;
+  }
+
+  // Resolve to absolute path
+  const resolved = path.resolve(outputDir);
+
+  // Check if the resolved path is within ./data/ directory
+  const dataBase = path.resolve('./data');
+  if (!resolved.startsWith(dataBase)) {
+    throw new Error(`Invalid output directory: must be within ./data/ directory`);
+  }
+
+  // Additional check: no path traversal sequences in original input
+  if (outputDir.includes('..')) {
+    throw new Error(`Invalid output directory: path traversal not allowed`);
+  }
+
+  return resolved;
+}
 
 /**
  * Input schema for mail_export_parquet
@@ -105,6 +136,9 @@ Exports are compressed with zstd for optimal size/speed.`,
   handler: async (args: unknown) => {
     const input = MailExportParquetInputSchema.parse(args);
 
+    // Validate output directory to prevent path traversal
+    const safeOutputDir = validateOutputDir(input.outputDir);
+
     // Initialize DuckDB
     initDuckDB();
 
@@ -126,7 +160,7 @@ Exports are compressed with zstd for optimal size/speed.`,
     // Export emails
     if (input.type === 'emails' || input.type === 'both') {
       const result = await exportEmailsToParquet(
-        input.outputDir ? `${input.outputDir}/emails.parquet` : undefined,
+        input.outputDir ? `${safeOutputDir}/emails.parquet` : undefined,
         input.accountId
       );
       exports.push({
@@ -143,7 +177,7 @@ Exports are compressed with zstd for optimal size/speed.`,
     // Export attachments
     if (input.type === 'attachments' || input.type === 'both') {
       const result = await exportAttachmentsToParquet(
-        input.outputDir ? `${input.outputDir}/attachments.parquet` : undefined,
+        input.outputDir ? `${safeOutputDir}/attachments.parquet` : undefined,
         input.accountId
       );
       exports.push({
@@ -158,7 +192,7 @@ Exports are compressed with zstd for optimal size/speed.`,
     }
 
     // List existing exports
-    const existingExports = listExports(input.outputDir).map((e) => ({
+    const existingExports = listExports(safeOutputDir).map((e) => ({
       filename: e.filename,
       path: e.path,
       sizeHuman: formatBytes(e.sizeBytes),

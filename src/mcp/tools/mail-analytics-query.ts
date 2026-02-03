@@ -149,11 +149,9 @@ Only SELECT queries are allowed. Use mail_analytics_summary for pre-built querie
       // Initialize DuckDB
       initDuckDB();
 
-      // Add LIMIT if not present
-      let sql = input.sql.trim();
-      if (!sql.toUpperCase().includes('LIMIT')) {
-        sql = `${sql} LIMIT ${input.limit}`;
-      }
+      // Wrap user query in subselect to enforce read-only and limit
+      // This prevents any write operations even if keyword check is bypassed
+      const sql = `SELECT * FROM (${input.sql.trim()}) AS user_query LIMIT ${input.limit}`;
 
       // Execute query
       const rows = await queryDuckDB(sql);

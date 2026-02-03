@@ -147,9 +147,25 @@ export function stageForDeletion(
 }
 
 /**
- * Create MIME backup of an email
+ * Attachment row type for backup
+ */
+interface AttachmentRow {
+  id: number;
+  email_id: number;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  content_hash: string | null;
+  extracted_at: string | null;
+  local_path: string | null;
+}
+
+/**
+ * Create MIME backup of an email including attachments
  */
 function createMimeBackup(email: EmailRow): string {
+  const db = getDatabase();
+
   // Ensure backup directory exists
   const accountDir = path.join(BACKUP_BASE_PATH, email.account_id.toString());
   if (!fs.existsSync(accountDir)) {
@@ -160,6 +176,12 @@ function createMimeBackup(email: EmailRow): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const filename = `${email.id}_${timestamp}.json`;
   const backupPath = path.join(accountDir, filename);
+
+  // Get attachments for this email
+  const attachments = db.prepare(`
+    SELECT id, email_id, filename, mime_type, size_bytes, content_hash, extracted_at, local_path
+    FROM attachments WHERE email_id = ?
+  `).all(email.id) as AttachmentRow[];
 
   // Save email data as JSON (simplified MIME backup)
   const backupData = {
@@ -188,6 +210,15 @@ function createMimeBackup(email: EmailRow): string {
     createdAt: email.created_at,
     updatedAt: email.updated_at,
     backedUpAt: new Date().toISOString(),
+    // Include attachments metadata for restoration
+    attachments: attachments.map((a) => ({
+      filename: a.filename,
+      mimeType: a.mime_type,
+      sizeBytes: a.size_bytes,
+      contentHash: a.content_hash,
+      extractedAt: a.extracted_at,
+      localPath: a.local_path,
+    })),
   };
 
   fs.writeFileSync(backupPath, JSON.stringify(backupData, null, 2));
@@ -471,7 +502,7 @@ export function getExpiredStagedEmails(): number[] {
 /**
  * Restore email from backup
  */
-export function restoreFromBackup(backupPath: string): boolean {
+export function restoreFromBackup(backupPath: string): { emailId: number; attachmentsRestored: number } {
   if (!fs.existsSync(backupPath)) {
     throw new StorageError('Backup file not found', 'BACKUP_NOT_FOUND');
   }
@@ -480,7 +511,7 @@ export function restoreFromBackup(backupPath: string): boolean {
   const db = getDatabase();
 
   // Re-insert email
-  db.prepare(`
+  const result = db.prepare(`
     INSERT INTO emails (
       account_id, provider_message_id, thread_id,
       from_address, from_name,
@@ -524,5 +555,31 @@ export function restoreFromBackup(backupPath: string): boolean {
     backupData.hasAttachments ? 1 : 0
   );
 
-  return true;
+  const newEmailId = Number(result.lastInsertRowid);
+
+  // Restore attachments if they were backed up
+  let attachmentsRestored = 0;
+  if (backupData.attachments && Array.isArray(backupData.attachments)) {
+    const insertAttachment = db.prepare(`
+      INSERT INTO attachments (
+        email_id, filename, mime_type, size_bytes,
+        content_hash, extracted_at, local_path
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const attachment of backupData.attachments) {
+      insertAttachment.run(
+        newEmailId,
+        attachment.filename,
+        attachment.mimeType,
+        attachment.sizeBytes,
+        attachment.contentHash || null,
+        attachment.extractedAt || null,
+        attachment.localPath || null
+      );
+      attachmentsRestored++;
+    }
+  }
+
+  return { emailId: newEmailId, attachmentsRestored };
 }

@@ -125,7 +125,7 @@ function buildFieldCondition(
 
   switch (field) {
     case 'from':
-      ctx.params.push(`%${value}%`);
+      ctx.params.push(`%${value}%`, `%${value}%`);
       return `(e.from_address ${op} ? OR e.from_name ${op} ?)`;
 
     case 'to':
