@@ -54,7 +54,7 @@
     "@google-cloud/secret-manager": "^6.1.1",
     "@google-cloud/vertexai": "^1.9.0",
     "@inquirer/prompts": "^7.2.1",
-    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@modelcontextprotocol/sdk": "^1.25.2",
     "better-sqlite3": "^9.2.2",
     "commander": "^12.1.0",
     "conf": "^13.0.1",
