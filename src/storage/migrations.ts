@@ -86,6 +86,42 @@ CREATE INDEX IF NOT EXISTS idx_deletion_log_committed_at ON deletion_log(committ
 `,
     checksum: '', // Will be calculated
   },
+  {
+    version: 4,
+    name: 'add_realtime_sync',
+    up: `
+-- Add push notification / watch state columns to accounts
+ALTER TABLE accounts ADD COLUMN watch_expiration TEXT;
+ALTER TABLE accounts ADD COLUMN watch_history_id TEXT;
+ALTER TABLE accounts ADD COLUMN push_enabled INTEGER DEFAULT 0;
+
+-- Create push notification log for debugging and metrics
+CREATE TABLE IF NOT EXISTS push_notification_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER NOT NULL,
+
+  -- Notification data
+  history_id TEXT NOT NULL,
+  message_data TEXT,  -- Raw Pub/Sub message (base64 decoded)
+
+  -- Processing state
+  received_at TEXT NOT NULL DEFAULT (datetime('now')),
+  processed_at TEXT,
+  sync_triggered INTEGER DEFAULT 0,
+
+  -- Error tracking
+  error TEXT,
+
+  FOREIGN KEY (account_id) REFERENCES accounts(id)
+);
+
+-- Index for efficient lookups
+CREATE INDEX IF NOT EXISTS idx_push_log_account ON push_notification_log(account_id);
+CREATE INDEX IF NOT EXISTS idx_push_log_received ON push_notification_log(received_at);
+CREATE INDEX IF NOT EXISTS idx_accounts_watch ON accounts(watch_expiration);
+`,
+    checksum: '', // Will be calculated
+  },
 ];
 
 // Calculate checksums for all migrations

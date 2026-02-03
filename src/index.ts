@@ -50,6 +50,9 @@ import { mailDeletionLogTool } from './mcp/tools/mail-deletion-log.js';
 import { mailAnalyticsSummaryTool } from './mcp/tools/mail-analytics-summary.js';
 import { mailAnalyticsQueryTool } from './mcp/tools/mail-analytics-query.js';
 import { mailExportParquetTool } from './mcp/tools/mail-export-parquet.js';
+import { mailWatchStartTool } from './mcp/tools/mail-watch-start.js';
+import { mailWatchStopTool } from './mcp/tools/mail-watch-stop.js';
+import { mailWatchStatusTool } from './mcp/tools/mail-watch-status.js';
 import { initDatabase, closeDatabase } from './storage/database.js';
 import { runMigrations } from './storage/migrations.js';
 import { initSyncMetricsTable } from './storage/services/sync-metrics.js';
@@ -102,6 +105,9 @@ async function main() {
     mailAnalyticsSummaryTool,
     mailAnalyticsQueryTool,
     mailExportParquetTool,
+    mailWatchStartTool,
+    mailWatchStopTool,
+    mailWatchStatusTool,
   ];
 
   // Create MCP server instance

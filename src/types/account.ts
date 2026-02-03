@@ -37,6 +37,17 @@ export const SyncStateSchema = z.object({
 export type SyncState = z.infer<typeof SyncStateSchema>;
 
 /**
+ * Watch state schema (for push notifications)
+ */
+export const WatchStateSchema = z.object({
+  expiration: z.string().optional(),      // ISO 8601 - when watch expires
+  historyId: z.string().optional(),       // History ID when watch was set up
+  pushEnabled: z.boolean().default(false),
+});
+
+export type WatchState = z.infer<typeof WatchStateSchema>;
+
+/**
  * Account schema (domain object)
  */
 export const AccountSchema = z.object({
@@ -50,6 +61,9 @@ export const AccountSchema = z.object({
 
   // Sync state
   syncState: SyncStateSchema.optional(),
+
+  // Watch state (push notifications)
+  watchState: WatchStateSchema.optional(),
 
   // Status
   isActive: z.boolean(),
@@ -79,6 +93,11 @@ export interface AccountRow {
   last_history_id: string | null;
   delta_token: string | null;
   last_sync_at: string | null;
+
+  // Push notification / watch state
+  watch_expiration: string | null;
+  watch_history_id: string | null;
+  push_enabled: number;  // 0 or 1
 
   // Status
   is_active: number;  // 0 or 1
