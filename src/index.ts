@@ -38,6 +38,18 @@ import { mailDraftTool } from './mcp/tools/mail-draft.js';
 import { mailSemanticSearchTool } from './mcp/tools/mail-semantic-search.js';
 import { mailTriageTool } from './mcp/tools/mail-triage.js';
 import { mailComposeSuggestTool } from './mcp/tools/mail-compose-suggest.js';
+import { mailParseQueryTool } from './mcp/tools/mail-parse-query.js';
+import { mailExtractAttachmentsTool } from './mcp/tools/mail-extract-attachments.js';
+import { mailAttachmentStatsTool } from './mcp/tools/mail-attachment-stats.js';
+import { mailFindDuplicatesTool } from './mcp/tools/mail-find-duplicates.js';
+import { mailStageDeleteTool } from './mcp/tools/mail-stage-delete.js';
+import { mailListStagedTool } from './mcp/tools/mail-list-staged.js';
+import { mailUnstageTool } from './mcp/tools/mail-unstage.js';
+import { mailCommitDeletionsTool } from './mcp/tools/mail-commit-deletions.js';
+import { mailDeletionLogTool } from './mcp/tools/mail-deletion-log.js';
+import { mailAnalyticsSummaryTool } from './mcp/tools/mail-analytics-summary.js';
+import { mailAnalyticsQueryTool } from './mcp/tools/mail-analytics-query.js';
+import { mailExportParquetTool } from './mcp/tools/mail-export-parquet.js';
 import { initDatabase, closeDatabase } from './storage/database.js';
 import { runMigrations } from './storage/migrations.js';
 import { initSyncMetricsTable } from './storage/services/sync-metrics.js';
@@ -78,6 +90,18 @@ async function main() {
     mailSemanticSearchTool,
     mailTriageTool,
     mailComposeSuggestTool,
+    mailParseQueryTool,
+    mailExtractAttachmentsTool,
+    mailAttachmentStatsTool,
+    mailFindDuplicatesTool,
+    mailStageDeleteTool,
+    mailListStagedTool,
+    mailUnstageTool,
+    mailCommitDeletionsTool,
+    mailDeletionLogTool,
+    mailAnalyticsSummaryTool,
+    mailAnalyticsQueryTool,
+    mailExportParquetTool,
   ];
 
   // Create MCP server instance

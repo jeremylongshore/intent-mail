@@ -154,6 +154,10 @@ export interface EmailRow {
   size_bytes: number | null;
   has_attachments: number;  // 0 or 1
 
+  // Deletion staging
+  deletion_staged_at: string | null;
+  deletion_backup_path: string | null;
+
   // Timestamps
   created_at: string;
   updated_at: string;

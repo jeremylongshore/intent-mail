@@ -14,6 +14,7 @@ import {
   EmailSearchFilters,
   EmailUpsertInput,
 } from '../../types/email.js';
+import { parseQuery, astToSql } from '../../search/index.js';
 
 /**
  * Convert database row to domain object
@@ -281,6 +282,93 @@ export function searchEmails(filters: EmailSearchFilters): SearchResult<Email> {
   if (filters.dateTo) {
     conditions.push('e.date <= ?');
     params.push(filters.dateTo);
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  // Count total matches
+  const countQuery = `SELECT COUNT(*) as total FROM emails e ${whereClause}`;
+  const countStmt = db.prepare(countQuery);
+  const countResult = countStmt.get(...params) as { total: number };
+  const total = countResult.total;
+
+  // Fetch paginated results
+  const query = `
+    SELECT * FROM emails e
+    ${whereClause}
+    ORDER BY e.date DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  const stmt = db.prepare(query);
+  const rows = stmt.all(...params, filters.limit, filters.offset) as EmailRow[];
+
+  const items = rows.map(rowToEmail);
+  const hasMore = filters.offset + items.length < total;
+
+  return {
+    items,
+    total,
+    hasMore,
+  };
+}
+
+/**
+ * Extended search filters including Gmail query syntax
+ */
+export interface GmailQuerySearchFilters {
+  gmailQuery: string;
+  accountId?: number;
+  limit: number;
+  offset: number;
+}
+
+/**
+ * Search emails using Gmail-style query syntax
+ *
+ * Supports operators like:
+ *   from:user@example.com   to:team@company.com
+ *   subject:meeting         has:attachment
+ *   is:unread               is:starred
+ *   larger:5M               smaller:10K
+ *   before:2025-01-01       after:2024-06-01
+ *   older_than:7d           newer_than:1m
+ *   "exact phrase"          -exclude
+ *   term1 OR term2          label:important
+ */
+export function searchEmailsWithGmailQuery(
+  filters: GmailQuerySearchFilters
+): SearchResult<Email> {
+  const db = getDatabase();
+
+  // Parse the Gmail query
+  const parseResult = parseQuery(filters.gmailQuery);
+  if (!parseResult.success || !parseResult.ast) {
+    // If parsing fails, fall back to basic FTS search
+    return searchEmails({
+      query: filters.gmailQuery,
+      accountId: filters.accountId,
+      limit: filters.limit,
+      offset: filters.offset,
+    });
+  }
+
+  // Convert AST to SQL
+  const sqlConversion = astToSql(parseResult.ast);
+
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  // Add account filter
+  if (filters.accountId !== undefined) {
+    conditions.push('e.account_id = ?');
+    params.push(filters.accountId);
+  }
+
+  // Add parsed query conditions
+  if (sqlConversion.whereClause) {
+    conditions.push(sqlConversion.whereClause);
+    params.push(...sqlConversion.params);
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
