@@ -162,14 +162,23 @@ interface AttachmentRow {
 
 /**
  * Create MIME backup of an email including attachments
+ *
+ * SECURITY NOTE: Backups contain email content (body text/HTML) which may include
+ * PII or sensitive information. Consider:
+ * - Restricting file permissions on the backup directory
+ * - Using metadataOnly=true if body content is not needed for restoration
+ * - Implementing encryption for backups containing sensitive data
+ *
+ * @param email - The email to backup
+ * @param metadataOnly - If true, excludes body content (bodyText, bodyHtml) for privacy
  */
-function createMimeBackup(email: EmailRow): string {
+function createMimeBackup(email: EmailRow, metadataOnly: boolean = false): string {
   const db = getDatabase();
 
-  // Ensure backup directory exists
+  // Ensure backup directory exists with restricted permissions
   const accountDir = path.join(BACKUP_BASE_PATH, email.account_id.toString());
   if (!fs.existsSync(accountDir)) {
-    fs.mkdirSync(accountDir, { recursive: true });
+    fs.mkdirSync(accountDir, { recursive: true, mode: 0o700 });
   }
 
   // Create backup filename with timestamp
@@ -183,7 +192,8 @@ function createMimeBackup(email: EmailRow): string {
     FROM attachments WHERE email_id = ?
   `).all(email.id) as AttachmentRow[];
 
-  // Save email data as JSON (simplified MIME backup)
+  // Save email data as JSON
+  // If metadataOnly, exclude body content to reduce PII exposure
   const backupData = {
     id: email.id,
     accountId: email.account_id,
@@ -195,8 +205,9 @@ function createMimeBackup(email: EmailRow): string {
     ccAddresses: email.cc_addresses,
     bccAddresses: email.bcc_addresses,
     subject: email.subject,
-    bodyText: email.body_text,
-    bodyHtml: email.body_html,
+    // Only include body content if not metadata-only backup
+    bodyText: metadataOnly ? null : email.body_text,
+    bodyHtml: metadataOnly ? null : email.body_html,
     snippet: email.snippet,
     date: email.date,
     receivedAt: email.received_at,
@@ -204,12 +215,13 @@ function createMimeBackup(email: EmailRow): string {
     labels: email.labels,
     inReplyTo: email.in_reply_to,
     referenceHeaders: email.reference_headers,
-    rawHeaders: email.raw_headers,
+    rawHeaders: metadataOnly ? null : email.raw_headers,
     sizeBytes: email.size_bytes,
     hasAttachments: email.has_attachments,
     createdAt: email.created_at,
     updatedAt: email.updated_at,
     backedUpAt: new Date().toISOString(),
+    metadataOnly,
     // Include attachments metadata for restoration
     attachments: attachments.map((a) => ({
       filename: a.filename,
@@ -221,7 +233,8 @@ function createMimeBackup(email: EmailRow): string {
     })),
   };
 
-  fs.writeFileSync(backupPath, JSON.stringify(backupData, null, 2));
+  // Write with restricted permissions (owner read/write only)
+  fs.writeFileSync(backupPath, JSON.stringify(backupData, null, 2), { mode: 0o600 });
 
   return backupPath;
 }

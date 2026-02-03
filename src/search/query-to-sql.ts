@@ -378,11 +378,12 @@ export function astToSql(ast: QueryAST): SqlConversion {
 
 /**
  * Convenience function: parse query and convert to SQL in one step
+ * Note: This is async due to dynamic import to avoid circular dependencies.
+ * For synchronous usage, import parseQuery directly from query-parser.js
  */
-export function queryToSql(query: string): SqlConversion | null {
-  // Import parseQuery dynamically to avoid circular deps
-  // In practice, import at top of file in real usage
-  const { parseQuery } = require('./query-parser.js');
+export async function queryToSql(query: string): Promise<SqlConversion | null> {
+  // Dynamic import to avoid circular dependency between parser and SQL converter
+  const { parseQuery } = await import('./query-parser.js');
   const result = parseQuery(query);
 
   if (!result.success || !result.ast) {

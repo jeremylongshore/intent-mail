@@ -8,6 +8,9 @@
 import * as duckdb from 'duckdb';
 import * as path from 'path';
 import * as fs from 'fs';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger({ module: 'duckdb' });
 
 /**
  * Default DuckDB database path
@@ -34,14 +37,14 @@ export function initDuckDB(dbPath: string = DEFAULT_DB_PATH): duckdb.Connection 
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  console.error(`Initializing DuckDB at ${dbPath}...`);
+  log.info('Initializing DuckDB', { path: dbPath });
   db = new duckdb.Database(dbPath);
   connection = db.connect();
 
   // Create analytics tables
   createAnalyticsTables(connection);
 
-  console.error('DuckDB initialized successfully');
+  log.info('DuckDB initialized successfully');
   return connection;
 }
 
@@ -67,7 +70,7 @@ export function closeDuckDB(): void {
     db.close();
     db = null;
   }
-  console.error('DuckDB connection closed');
+  log.info('DuckDB connection closed');
 }
 
 /**

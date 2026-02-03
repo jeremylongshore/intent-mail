@@ -11,9 +11,12 @@ import { EmailRow } from '../types/email.js';
 
 /**
  * Extract domain from email address
+ * Handles both simple (user@example.com) and formatted ("Name" <user@example.com>) addresses
  */
 function extractDomain(email: string): string {
-  const match = email.match(/@([^>]+)/);
+  // Match @ followed by domain characters (letters, digits, dots, hyphens)
+  // Stop at whitespace, >, or end of string
+  const match = email.match(/@([a-zA-Z0-9.-]+)/);
   return match ? match[1].toLowerCase() : '';
 }
 
@@ -88,26 +91,23 @@ export async function syncAllEmails(accountId?: number): Promise<SyncResult> {
       await runDuckDB('DELETE FROM emails_analytics');
     }
 
-    // Insert emails in batches
-    const batchSize = 1000;
+    // Insert emails in batches using multi-value INSERT for better performance
+    const batchSize = 500;
     for (let i = 0; i < emails.length; i += batchSize) {
       const batch = emails.slice(i, i + batchSize);
 
-      for (const email of batch) {
-        try {
+      try {
+        // Build batch insert with multiple value tuples
+        const placeholders: string[] = [];
+        const batchParams: unknown[] = [];
+
+        for (const email of batch) {
           const flags = parseFlags(email.flags);
           const labels = parseLabels(email.labels);
           const domain = extractDomain(email.from_address);
 
-          await runDuckDB(`
-            INSERT INTO emails_analytics (
-              id, account_id, provider_message_id, thread_id,
-              from_address, from_name, from_domain, subject, snippet,
-              date, received_at,
-              is_read, is_flagged, is_draft, is_answered,
-              size_bytes, has_attachments, labels
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `, [
+          placeholders.push('(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+          batchParams.push(
             email.id,
             email.account_id,
             email.provider_message_id,
@@ -125,12 +125,62 @@ export async function syncAllEmails(accountId?: number): Promise<SyncResult> {
             flags.isAnswered,
             email.size_bytes,
             email.has_attachments === 1,
-            labels,
-          ]);
+            labels
+          );
+        }
 
-          emailsSynced++;
-        } catch (error) {
-          errors.push(`Email ${email.id}: ${error instanceof Error ? error.message : String(error)}`);
+        await runDuckDB(`
+          INSERT INTO emails_analytics (
+            id, account_id, provider_message_id, thread_id,
+            from_address, from_name, from_domain, subject, snippet,
+            date, received_at,
+            is_read, is_flagged, is_draft, is_answered,
+            size_bytes, has_attachments, labels
+          ) VALUES ${placeholders.join(', ')}
+        `, batchParams);
+
+        emailsSynced += batch.length;
+      } catch (error) {
+        // On batch failure, fall back to individual inserts to identify problematic rows
+        for (const email of batch) {
+          try {
+            const flags = parseFlags(email.flags);
+            const labels = parseLabels(email.labels);
+            const domain = extractDomain(email.from_address);
+
+            await runDuckDB(`
+              INSERT INTO emails_analytics (
+                id, account_id, provider_message_id, thread_id,
+                from_address, from_name, from_domain, subject, snippet,
+                date, received_at,
+                is_read, is_flagged, is_draft, is_answered,
+                size_bytes, has_attachments, labels
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+              email.id,
+              email.account_id,
+              email.provider_message_id,
+              email.thread_id,
+              email.from_address,
+              email.from_name,
+              domain,
+              email.subject,
+              email.snippet,
+              email.date,
+              email.received_at,
+              flags.isRead,
+              flags.isFlagged,
+              flags.isDraft,
+              flags.isAnswered,
+              email.size_bytes,
+              email.has_attachments === 1,
+              labels,
+            ]);
+
+            emailsSynced++;
+          } catch (rowError) {
+            errors.push(`Email ${email.id}: ${rowError instanceof Error ? rowError.message : String(rowError)}`);
+          }
         }
       }
     }
@@ -152,26 +202,59 @@ export async function syncAllEmails(accountId?: number): Promise<SyncResult> {
       extracted_at: string | null;
     }>;
 
-    for (const attachment of attachments) {
+    // Batch insert attachments
+    for (let i = 0; i < attachments.length; i += batchSize) {
+      const batch = attachments.slice(i, i + batchSize);
+
       try {
+        const placeholders: string[] = [];
+        const batchParams: unknown[] = [];
+
+        for (const attachment of batch) {
+          placeholders.push('(?, ?, ?, ?, ?, ?, ?, ?)');
+          batchParams.push(
+            attachment.id,
+            attachment.email_id,
+            attachment.account_id,
+            attachment.filename,
+            attachment.mime_type,
+            attachment.size_bytes,
+            attachment.content_hash,
+            attachment.extracted_at
+          );
+        }
+
         await runDuckDB(`
           INSERT INTO attachments_analytics (
             id, email_id, account_id, filename, mime_type, size_bytes, content_hash, extracted_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-          attachment.id,
-          attachment.email_id,
-          attachment.account_id,
-          attachment.filename,
-          attachment.mime_type,
-          attachment.size_bytes,
-          attachment.content_hash,
-          attachment.extracted_at,
-        ]);
+          ) VALUES ${placeholders.join(', ')}
+        `, batchParams);
 
-        attachmentsSynced++;
+        attachmentsSynced += batch.length;
       } catch (error) {
-        errors.push(`Attachment ${attachment.id}: ${error instanceof Error ? error.message : String(error)}`);
+        // Fall back to individual inserts on batch failure
+        for (const attachment of batch) {
+          try {
+            await runDuckDB(`
+              INSERT INTO attachments_analytics (
+                id, email_id, account_id, filename, mime_type, size_bytes, content_hash, extracted_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+              attachment.id,
+              attachment.email_id,
+              attachment.account_id,
+              attachment.filename,
+              attachment.mime_type,
+              attachment.size_bytes,
+              attachment.content_hash,
+              attachment.extracted_at,
+            ]);
+
+            attachmentsSynced++;
+          } catch (rowError) {
+            errors.push(`Attachment ${attachment.id}: ${rowError instanceof Error ? rowError.message : String(rowError)}`);
+          }
+        }
       }
     }
 
