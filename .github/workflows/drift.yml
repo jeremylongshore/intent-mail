@@ -1,9 +1,10 @@
 name: Infrastructure Drift Detection
 
 on:
-  schedule:
-    # Run every day at 9am UTC (2am PST / 5am EST)
-    - cron: '0 9 * * *'
+  # schedule disabled — burns Actions minutes
+  # schedule:
+  #   # Run every day at 9am UTC (2am PST / 5am EST)
+  #   - cron: '0 9 * * *'
   workflow_dispatch:
 
 env:
