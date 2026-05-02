@@ -69,3 +69,6 @@ bmad/node_modules
 # Archive directory
 archive/
 000-docs-personal/
+
+# Dolt database files (added by bd init)
+.dolt/
