@@ -5,7 +5,7 @@ Multi-surface email platform with MCP server, Discord bot, and web dashboard. AI
 ## What This Is
 
 A complete email management platform:
-- **MCP Server**: 44 tools for programmatic email access (Gmail + Outlook)
+- **MCP Server**: 45 tools for programmatic email access (Gmail + Outlook)
 - **Claude Code plugin**: install once for the `email-checkin`,
   `email-triage-actions`, and `email-project-context` skills (see below)
 - **Discord Bot**: Slash commands for inbox management
@@ -23,7 +23,7 @@ A complete email management platform:
 - Gmail connector (OAuth, History API delta sync)
 - Outlook connector (OAuth PKCE, Microsoft Graph delta sync, flag/move/folders,
   attachment extraction, delta-poll "watch")
-- 44 MCP tools with rules engine + rollback
+- 45 MCP tools with rules engine + rollback
 - AI daily-digest + live-artifact daily-review surface
 - OAuth tokens encrypted at rest (AES-256-GCM)
 - Discord bot with slash commands
@@ -164,7 +164,7 @@ Click the URL, authorize, and you're ready!
 
 ---
 
-## MCP Tools (44 Total)
+## MCP Tools (45 Total)
 
 ### Authentication & Accounts
 - `health_check` - Server status and capabilities
@@ -181,6 +181,7 @@ Click the URL, authorize, and you're ready!
 - `mail_daily_digest` - Structured daily-review payload (stats, priority groups, why)
 - `mail_triage` - Per-email P1–P4 priority + action + why + deadline
 - `mail_summarize` - Long-thread / message summaries
+- `mail_list_contexts` - List `@project:`/`@client:` context handles (context injection)
 
 ### Actions (write-through, provider-routed)
 - `mail_action` - Consolidated op: mark_read / archive / flag / move / stage_delete / unsubscribe
@@ -215,7 +216,7 @@ Click the URL, authorize, and you're ready!
 ┌────────────────▼─────────────────────────┐
 │   IntentMail MCP Server (Node.js)        │
 │   ┌────────────────────────────────────┐ │
-│   │ 44 MCP Tools                       │ │
+│   │ 45 MCP Tools                       │ │
 │   │ (search, send, rules, rollback)    │ │
 │   └──────────────┬─────────────────────┘ │
 │                  │                        │
@@ -430,7 +431,7 @@ We welcome contributions! See [Contributing Guide](000-docs/032-DR-GUID-contribu
 intent-mail/
 ├── src/
 │   ├── index.ts              # MCP server entry point
-│   ├── mcp/tools/            # 44 MCP tool implementations
+│   ├── mcp/tools/            # 45 MCP tool implementations
 │   ├── connectors/           # Gmail, Outlook, IMAP
 │   ├── rules/                # Rules engine + parser
 │   ├── storage/              # SQLite + migrations
