@@ -11,6 +11,9 @@ import { getDatabase } from '../storage/database.js';
 import { createLogger } from '../utils/logger.js';
 import { AccountRow, EmailProvider } from '../types/account.js';
 import { createGmailOAuth, createGmailClient, createGmailSync } from '../connectors/gmail/index.js';
+import { getProviderClientForAccount } from '../connectors/provider-client.js';
+import { createOutlookSync } from '../connectors/outlook/sync.js';
+import { decryptToken } from '../storage/token-crypto.js';
 import {
   startWatch,
   getAccountsWithExpiringWatches,
@@ -86,8 +89,8 @@ export async function processPushNotification(
     });
 
     oauth.setCredentials({
-      accessToken: account.access_token!,
-      refreshToken: account.refresh_token!,
+      accessToken: decryptToken(account.access_token!),
+      refreshToken: decryptToken(account.refresh_token!),
       expiresAt: account.token_expires_at || '',
     });
 
@@ -176,8 +179,8 @@ export async function renewExpiringWatches(pubsubTopic: string): Promise<{
       });
 
       oauth.setCredentials({
-        accessToken: fullAccount.access_token,
-        refreshToken: fullAccount.refresh_token,
+        accessToken: decryptToken(fullAccount.access_token),
+        refreshToken: decryptToken(fullAccount.refresh_token),
         expiresAt: fullAccount.token_expires_at || '',
       });
 
@@ -243,8 +246,8 @@ export async function pollNonPushAccounts(): Promise<{
       });
 
       oauth.setCredentials({
-        accessToken: account.access_token,
-        refreshToken: account.refresh_token,
+        accessToken: decryptToken(account.access_token),
+        refreshToken: decryptToken(account.refresh_token),
         expiresAt: account.token_expires_at || '',
       });
 
@@ -275,6 +278,71 @@ export async function pollNonPushAccounts(): Promise<{
         email: account.email,
         error: errorMessage,
       });
+    }
+  }
+
+  return { polled, emailsSynced, errors };
+}
+
+/**
+ * Poll active Outlook accounts via Graph delta queries.
+ *
+ * Graph change-notifications (webhooks) require a public HTTPS endpoint plus
+ * 3-day subscription renewal, which is infeasible for a self-hosted MCP. So
+ * the "watch" model for Outlook is delta-polling: every active Outlook account
+ * that already has a stored deltaToken is delta-synced on the polling
+ * interval. (A fresh account must run an initial mail_sync first to obtain its
+ * first deltaToken.) This relies on the page-1+ delta fix in the Graph client.
+ */
+export async function pollOutlookAccounts(): Promise<{
+  polled: number;
+  emailsSynced: number;
+  errors: string[];
+}> {
+  const db = getDatabase();
+
+  const accounts = db
+    .prepare(
+      `SELECT * FROM accounts WHERE is_active = 1 AND provider = ?`
+    )
+    .all(EmailProvider.OUTLOOK) as AccountRow[];
+
+  log.info('Polling Outlook accounts (delta)', { count: accounts.length });
+
+  let polled = 0;
+  let emailsSynced = 0;
+  const errors: string[] = [];
+
+  for (const account of accounts) {
+    // Without a deltaToken there is nothing to delta against yet.
+    if (!account.delta_token) {
+      continue;
+    }
+
+    try {
+      // Factory handles token refresh + persistence (incl. on-401).
+      const client = await getProviderClientForAccount(account.id);
+      if (!client.outlook) {
+        continue;
+      }
+
+      const sync = createOutlookSync(client.outlook, account.id);
+      const result = await sync.deltaSync(account.delta_token);
+
+      db.prepare(
+        `UPDATE accounts
+           SET delta_token = ?,
+               last_sync_at = ?,
+               updated_at = datetime('now')
+         WHERE id = ?`
+      ).run(result.deltaLink, result.syncedAt, account.id);
+
+      emailsSynced += result.messagesAdded + result.labelsChanged;
+      polled++;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      errors.push(`${account.email}: ${errorMessage}`);
+      log.error('Outlook poll failed', { email: account.email, error: errorMessage });
     }
   }
 
@@ -320,12 +388,19 @@ export function startDaemon(config: Partial<DaemonConfig> = {}): void {
     });
   }
 
-  // Polling timer for non-push accounts
+  // Polling timer for non-push accounts (Gmail without push + all Outlook).
   pollingTimer = setInterval(async () => {
     try {
       await pollNonPushAccounts();
     } catch (error) {
       log.error('Polling check failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+    try {
+      await pollOutlookAccounts();
+    } catch (error) {
+      log.error('Outlook polling check failed', {
         error: error instanceof Error ? error.message : String(error),
       });
     }

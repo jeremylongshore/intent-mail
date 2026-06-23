@@ -15,6 +15,7 @@ import {
   improveDraft,
 } from '../../ai/draft-generator.js';
 import { getEmailById, getEmailsByThreadId } from '../../storage/services/email-storage.js';
+import { expandContext } from '../../ai/context-store.js';
 
 // ============================================================
 // Input Schemas
@@ -270,7 +271,8 @@ Intents: reply, forward, followup, introduction, request, confirm, decline, info
             to: input.to,
             subject: input.subject,
             keyPoints: input.keyPoints,
-            context: input.context,
+            // C7 L1: expand @project:/@client: mentions into a context block.
+            context: expandContext(input.context),
             replyTo: replyTo || undefined,
             threadContext,
             length: input.length,

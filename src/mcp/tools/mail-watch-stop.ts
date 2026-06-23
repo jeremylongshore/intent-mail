@@ -9,6 +9,7 @@ import { getDatabase } from '../../storage/database.js';
 import { AccountRow, EmailProvider } from '../../types/account.js';
 import { createGmailOAuth, createGmailClient } from '../../connectors/gmail/index.js';
 import { stopWatch, getWatchState } from '../../sync/watch-manager.js';
+import { decryptToken } from '../../storage/token-crypto.js';
 
 /**
  * Input schema for mail_watch_stop
@@ -115,8 +116,8 @@ This disables real-time updates. The account will fall back to polling-based syn
       });
 
       oauth.setCredentials({
-        accessToken: account.access_token!,
-        refreshToken: account.refresh_token!,
+        accessToken: decryptToken(account.access_token!),
+        refreshToken: decryptToken(account.refresh_token!),
         expiresAt: account.token_expires_at || '',
       });
 

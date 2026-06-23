@@ -10,6 +10,7 @@
 import { z } from 'zod';
 import { type Email as StorageEmail, EmailFlag } from '../types/email.js';
 import { MultiProviderRouter } from './router.js';
+import { loadRulesPreamble } from './rules-prompt.js';
 
 // ============================================================
 // Types and Schemas
@@ -170,7 +171,12 @@ function buildTriagePrompt(email: StorageEmail): string {
   const labels = email.labels?.join(', ') || 'none';
   const isUnread = email.flags?.includes(EmailFlag.SEEN) ? 'No' : 'Yes';
 
-  return `Analyze this email and determine its priority and required action.
+  // C7 L2: prepend the user's plain-language prioritization preferences
+  // (context/rules.md) as soft guidance, if present.
+  const rulesPreamble = loadRulesPreamble();
+  const preamble = rulesPreamble ? `${rulesPreamble}\n\n` : '';
+
+  return `${preamble}Analyze this email and determine its priority and required action.
 
 Email:
 From: ${fromStr}

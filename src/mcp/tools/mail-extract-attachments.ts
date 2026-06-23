@@ -11,8 +11,7 @@ import {
   BatchExtractionResult,
 } from '../../storage/services/attachment-liberation.js';
 import { getDatabase } from '../../storage/database.js';
-import { createGmailClient } from '../../connectors/gmail/client.js';
-import { createGmailOAuth, getGmailOAuthConfigFromEnv } from '../../connectors/gmail/oauth.js';
+import { getProviderClientForAccount } from '../../connectors/provider-client.js';
 import { getAccountById } from '../../storage/services/account-storage.js';
 import { EmailProvider } from '../../types/account.js';
 
@@ -204,46 +203,27 @@ The extracted files are stored in:
           continue;
         }
 
-        // Fetch attachment content from provider
+        // Fetch attachment content from provider. The factory loads tokens,
+        // refreshes proactively, and wires the 401 refresh-persist hook for
+        // both Gmail and Outlook.
         let content: Buffer;
 
-        if (account.provider === EmailProvider.GMAIL) {
-          if (!account.tokens) {
-            result.errors.push({
-              attachmentId: attachment.id,
-              error: 'Account has no OAuth tokens',
-            });
-            continue;
-          }
+        const providerClient = await getProviderClientForAccount(account.id);
 
-          // Create Gmail client with proper OAuth
-          const config = getGmailOAuthConfigFromEnv();
-          const oauth = createGmailOAuth(config);
-          oauth.setCredentials(account.tokens);
-
-          // Check and refresh tokens if needed
-          if (oauth.isTokenExpired(account.tokens)) {
-            // Skip for now, let sync handle token refresh
-            result.errors.push({
-              attachmentId: attachment.id,
-              error: 'OAuth tokens expired. Run mail_sync to refresh.',
-            });
-            continue;
-          }
-
-          const gmailClient = createGmailClient(oauth);
-          const attachmentData = await gmailClient.getAttachment(
+        if (providerClient.provider === EmailProvider.GMAIL) {
+          const attachmentData = await providerClient.gmail!.getAttachment(
             emailRow.provider_message_id,
             emailRow.provider_attachment_id
           );
           content = Buffer.from(attachmentData.data, 'base64');
         } else {
-          // TODO: Implement Outlook attachment fetching
-          result.errors.push({
-            attachmentId: attachment.id,
-            error: `Provider ${account.provider} not yet supported for extraction`,
-          });
-          continue;
+          // Outlook: getAttachment returns base64 contentBytes and throws on
+          // non-file (item/reference) attachments — caught below and recorded.
+          const attachmentData = await providerClient.outlook!.getAttachment(
+            emailRow.provider_message_id,
+            emailRow.provider_attachment_id
+          );
+          content = Buffer.from(attachmentData.data, 'base64');
         }
 
         // Extract to filesystem

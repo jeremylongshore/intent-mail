@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "intentmail": {
+      "name": "intentmail",
+      "description": "Self-hosted IntentMail MCP server: Gmail + Outlook OAuth, delta sync, AI triage/summarize/rules, daily-digest, and write actions. Runs locally over stdio; the mailbox never leaves your machine.",
+      "version": "0.4.1",
+      "enabled": true,
+      "transport": "stdio",
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/intentmail.js", "serve"],
+      "env": {}
+    }
+  }
+}

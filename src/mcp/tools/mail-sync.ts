@@ -170,7 +170,13 @@ export const mailSyncTool = {
           console.error('Tokens refreshed successfully');
         }
 
-        const client = createOutlookClient(oauth);
+        const client = createOutlookClient(oauth, {
+          // Persist tokens if the client transparently refreshes on a 401
+          // mid-sync (the bulk path issues many requests).
+          onTokensRefreshed: async (tokens) => {
+            await updateTokens({ accountId: account.id, tokens });
+          },
+        });
         const sync = createOutlookSync(client, account.id);
 
         const hasDeltaLink = account.syncState?.deltaToken && !input.forceInitial;

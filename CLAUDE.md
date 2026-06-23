@@ -204,3 +204,28 @@ This repo participates in the **Intent Solutions Testing SOP** per `~/.claude/CL
 **Next step**: run `/audit-tests` to produce `TEST_AUDIT.md`. See `000-docs/259-OD-SOPS-audit-harness-baseline-2026-05-01.md`.
 
 **Upgrade**: `AUDIT_HARNESS_VERSION=vX.Y.Z curl -sSL https://raw.githubusercontent.com/jeremylongshore/audit-harness/main/install.sh | bash`. Or run `/sync-testing-harness` from any session.
+
+## Claude Code Plugin (`.claude-plugin/`)
+
+This repo IS a Claude Code plugin (self-hosted, single-repo — the user holds the
+OAuth token; the mailbox never leaves their machine).
+
+- **Manifest**: `.claude-plugin/plugin.json`. The `mcpServers` key is
+  **`intentmail`** (NOT the internal server name) — so tools resolve as
+  `mcp__intentmail__mail_*`. Mismatching this key is the silent-404 trap.
+- **Entry**: `node ${CLAUDE_PLUGIN_ROOT}/bin/intentmail.js serve` →
+  `dist/cli/index.js` → `dist/index.js` (MCP server over stdio). Requires
+  `npm ci --omit=dev && npm run build` so `dist/` exists.
+- **Skills** (`skills/`, each with full 8-field IS frontmatter):
+  - `email-checkin` — read-only daily digest (sync → triage → summarize → group).
+  - `email-triage-actions` — mutating, dry-run-first; drafts never auto-send;
+    two-phase staged deletes; audited + reversible.
+  - `email-project-context` — reads plain-language `context/projects.md` → rules.
+- **Context**: `context/projects.example.md` (copy to `context/projects.md`).
+- **Visual surface**: `artifacts/daily-review.html` renders the
+  `mail_daily_digest` payload as an interactive live artifact.
+
+**Validation before marketplace submission**: `npm run build` →
+`/validate-skillmd --marketplace` per skill → `/validate-mcp` →
+`/validate-plugin`. The marketplace listing lives in `claude-code-plugins`
+(`.claude-plugin/marketplace.json`, category `mcp`).

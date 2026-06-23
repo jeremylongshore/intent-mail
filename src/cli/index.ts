@@ -68,4 +68,13 @@ program
     await import('../index.js');
   });
 
+program
+  .command('serve-web')
+  .description('Run the local web API server (backs the web dashboard)')
+  .option('-p, --port <port>', 'Port to listen on (default 4787)')
+  .action(async (options: { port?: string }) => {
+    const { startApiServer } = await import('../web/server/api-server.js');
+    await startApiServer({ port: options.port ? Number(options.port) : undefined });
+  });
+
 program.parse();

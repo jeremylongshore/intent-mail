@@ -1,0 +1,35 @@
+{
+  "name": "intent-mail",
+  "version": "0.4.1",
+  "description": "Self-hosted email triage for Claude Code over Gmail and Outlook. Daily check-in digest (P1–P4 priority + why + needs-response), long-thread summaries, group-by-category, and real actions (read/archive/delete/draft/flag/move) through Gmail and Microsoft Graph — you hold the OAuth token, no third party sees your mailbox.",
+  "author": {
+    "name": "Jeremy Longshore",
+    "email": "jeremy@intentsolutions.io"
+  },
+  "homepage": "https://github.com/jeremylongshore/intent-mail",
+  "repository": "https://github.com/jeremylongshore/intent-mail",
+  "license": "Apache-2.0",
+  "keywords": [
+    "email",
+    "gmail",
+    "outlook",
+    "triage",
+    "inbox",
+    "mcp",
+    "microsoft-graph",
+    "self-hosted"
+  ],
+  "commands": [],
+  "mcpServers": {
+    "intentmail": {
+      "name": "intentmail",
+      "description": "Self-hosted IntentMail MCP server: Gmail + Outlook OAuth, delta sync, AI triage/summarize/rules, daily-digest, and write actions. Runs locally over stdio; the mailbox never leaves your machine.",
+      "version": "0.4.1",
+      "enabled": true,
+      "transport": "stdio",
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/intentmail.js", "serve"],
+      "env": {}
+    }
+  }
+}

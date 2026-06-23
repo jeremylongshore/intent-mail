@@ -15,6 +15,30 @@ import {
 } from './types.js';
 
 /**
+ * googleapis (gaxios) does not retry by default. The Gmail read path
+ * (history.list / messages.get / labels.list during sync) is the one that
+ * gets throttled, so we opt GETs into backoff on 429/5xx. We deliberately do
+ * NOT retry POST/DELETE (send/trash/delete) to avoid double-effecting a
+ * non-idempotent mutation whose 429 arrives after the server processed it.
+ */
+let gmailRetryConfigured = false;
+function ensureGmailRetryConfig(): void {
+  if (gmailRetryConfigured) return;
+  gmailRetryConfigured = true;
+  google.options({
+    retryConfig: {
+      retry: 4,
+      retryDelay: 500,
+      httpMethodsToRetry: ['GET'],
+      statusCodesToRetry: [
+        [429, 429],
+        [500, 599],
+      ],
+    },
+  });
+}
+
+/**
  * Gmail API client wrapper
  */
 export class GmailClient {
@@ -22,6 +46,7 @@ export class GmailClient {
   private userId = 'me'; // Special value for authenticated user
 
   constructor(oauth: GmailOAuth) {
+    ensureGmailRetryConfig();
     this.gmail = google.gmail({ version: 'v1', auth: oauth.getClient() });
   }
 

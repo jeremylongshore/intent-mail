@@ -70,6 +70,14 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    // Proxy /api to the local web API server (npm run dev:web-api) so the
+    // DailyReview surface reaches the shared engine without CORS in dev.
+    proxy: {
+      '/api': {
+        target: process.env.INTENTMAIL_WEB_API || 'http://127.0.0.1:4787',
+        changeOrigin: true,
+      },
+    },
   },
   envPrefix: 'VITE_',
 });
