@@ -10,6 +10,7 @@ import { getDatabase } from '../../storage/database.js';
 import { AccountRow, EmailProvider } from '../../types/account.js';
 import { createGmailOAuth, createGmailClient } from '../../connectors/gmail/index.js';
 import { startWatch } from '../../sync/watch-manager.js';
+import { decryptToken } from '../../storage/token-crypto.js';
 
 /**
  * Input schema for mail_watch_start
@@ -170,8 +171,8 @@ Use mail_watch_status to check expiration and mail_watch_stop to disable.`,
       });
 
       oauth.setCredentials({
-        accessToken: account.access_token,
-        refreshToken: account.refresh_token,
+        accessToken: decryptToken(account.access_token),
+        refreshToken: decryptToken(account.refresh_token),
         expiresAt: account.token_expires_at || '',
       });
 

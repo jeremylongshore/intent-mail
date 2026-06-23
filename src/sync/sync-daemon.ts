@@ -13,6 +13,7 @@ import { AccountRow, EmailProvider } from '../types/account.js';
 import { createGmailOAuth, createGmailClient, createGmailSync } from '../connectors/gmail/index.js';
 import { getProviderClientForAccount } from '../connectors/provider-client.js';
 import { createOutlookSync } from '../connectors/outlook/sync.js';
+import { decryptToken } from '../storage/token-crypto.js';
 import {
   startWatch,
   getAccountsWithExpiringWatches,
@@ -88,8 +89,8 @@ export async function processPushNotification(
     });
 
     oauth.setCredentials({
-      accessToken: account.access_token!,
-      refreshToken: account.refresh_token!,
+      accessToken: decryptToken(account.access_token!),
+      refreshToken: decryptToken(account.refresh_token!),
       expiresAt: account.token_expires_at || '',
     });
 
@@ -178,8 +179,8 @@ export async function renewExpiringWatches(pubsubTopic: string): Promise<{
       });
 
       oauth.setCredentials({
-        accessToken: fullAccount.access_token,
-        refreshToken: fullAccount.refresh_token,
+        accessToken: decryptToken(fullAccount.access_token),
+        refreshToken: decryptToken(fullAccount.refresh_token),
         expiresAt: fullAccount.token_expires_at || '',
       });
 
@@ -245,8 +246,8 @@ export async function pollNonPushAccounts(): Promise<{
       });
 
       oauth.setCredentials({
-        accessToken: account.access_token,
-        refreshToken: account.refresh_token,
+        accessToken: decryptToken(account.access_token),
+        refreshToken: decryptToken(account.refresh_token),
         expiresAt: account.token_expires_at || '',
       });
 

@@ -122,6 +122,17 @@ CREATE INDEX IF NOT EXISTS idx_accounts_watch ON accounts(watch_expiration);
 `,
     checksum: '', // Will be calculated
   },
+  {
+    version: 5,
+    name: 'encrypt_oauth_tokens',
+    up: `
+-- Track per-row token encryption version: 0 = plaintext (legacy),
+-- 1 = AES-256-GCM via src/storage/token-crypto.ts. Existing rows default to
+-- 0 and are lazily re-encrypted (set to 1) on next token read/write.
+ALTER TABLE accounts ADD COLUMN token_enc_version INTEGER NOT NULL DEFAULT 0;
+`,
+    checksum: '', // Will be calculated
+  },
 ];
 
 // Calculate checksums for all migrations

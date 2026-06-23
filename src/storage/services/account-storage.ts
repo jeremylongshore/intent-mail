@@ -7,6 +7,11 @@
 import { getDatabase } from '../database.js';
 import { StorageError } from '../../types/storage.js';
 import {
+  encryptNullable,
+  decryptToken,
+  isEncrypted,
+} from '../token-crypto.js';
+import {
   Account,
   AccountRow,
   AccountWithStats,
@@ -30,11 +35,12 @@ function rowToAccount(row: AccountRow, includeTokens = false): Account {
     updatedAt: row.updated_at,
   };
 
-  // Include tokens only if requested (privacy consideration)
+  // Include tokens only if requested (privacy consideration). Tokens are
+  // stored encrypted at rest; decryptToken passes plaintext (legacy) through.
   if (includeTokens && row.access_token && row.refresh_token && row.token_expires_at) {
     account.tokens = {
-      accessToken: row.access_token,
-      refreshToken: row.refresh_token,
+      accessToken: decryptToken(row.access_token),
+      refreshToken: decryptToken(row.refresh_token),
       expiresAt: row.token_expires_at,
     };
   }
@@ -52,6 +58,27 @@ function rowToAccount(row: AccountRow, includeTokens = false): Account {
 }
 
 /**
+ * Lazily re-encrypt a legacy plaintext token row in place. No-op when the row
+ * has no tokens or they are already encrypted. Called on token reads so older
+ * databases migrate to encryption-at-rest without an explicit batch job.
+ */
+function lazyReencryptRow(row: AccountRow): void {
+  if (!row.access_token || !row.refresh_token) return;
+  if (isEncrypted(row.access_token) && isEncrypted(row.refresh_token)) return;
+
+  const db = getDatabase();
+  db.prepare(
+    `UPDATE accounts
+       SET access_token = ?, refresh_token = ?, token_enc_version = 1
+     WHERE id = ?`
+  ).run(
+    encryptNullable(decryptToken(row.access_token)),
+    encryptNullable(decryptToken(row.refresh_token)),
+    row.id
+  );
+}
+
+/**
  * Create new account
  */
 export function createAccount(input: CreateAccountInput): Account {
@@ -61,8 +88,8 @@ export function createAccount(input: CreateAccountInput): Account {
     INSERT INTO accounts (
       provider, email, display_name,
       access_token, refresh_token, token_expires_at,
-      is_active
-    ) VALUES (?, ?, ?, ?, ?, ?, 1)
+      token_enc_version, is_active
+    ) VALUES (?, ?, ?, ?, ?, ?, 1, 1)
   `);
 
   try {
@@ -70,8 +97,8 @@ export function createAccount(input: CreateAccountInput): Account {
       input.provider,
       input.email,
       input.displayName || null,
-      input.tokens.accessToken,
-      input.tokens.refreshToken,
+      encryptNullable(input.tokens.accessToken),
+      encryptNullable(input.tokens.refreshToken),
       input.tokens.expiresAt
     );
 
@@ -108,6 +135,9 @@ export function getAccountById(id: number, includeTokens = false): Account | nul
     return null;
   }
 
+  if (includeTokens) {
+    lazyReencryptRow(row);
+  }
   return rowToAccount(row, includeTokens);
 }
 
@@ -124,6 +154,9 @@ export function getAccountByEmail(email: string, includeTokens = false): Account
     return null;
   }
 
+  if (includeTokens) {
+    lazyReencryptRow(row);
+  }
   return rowToAccount(row, includeTokens);
 }
 
@@ -193,13 +226,14 @@ export function updateTokens(input: UpdateTokensInput): void {
     SET access_token = ?,
         refresh_token = ?,
         token_expires_at = ?,
+        token_enc_version = 1,
         updated_at = datetime('now')
     WHERE id = ?
   `);
 
   const result = stmt.run(
-    input.tokens.accessToken,
-    input.tokens.refreshToken,
+    encryptNullable(input.tokens.accessToken),
+    encryptNullable(input.tokens.refreshToken),
     input.tokens.expiresAt,
     input.accountId
   );

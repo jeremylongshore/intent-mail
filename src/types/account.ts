@@ -88,6 +88,7 @@ export interface AccountRow {
   access_token: string | null;
   refresh_token: string | null;
   token_expires_at: string | null;
+  token_enc_version?: number; // 0 = plaintext (legacy), 1 = AES-256-GCM
 
   // Delta sync state
   last_history_id: string | null;
