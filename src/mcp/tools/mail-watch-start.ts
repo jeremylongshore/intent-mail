@@ -16,7 +16,11 @@ import { startWatch } from '../../sync/watch-manager.js';
  */
 const MailWatchStartInputSchema = z.object({
   accountId: z.number().int().positive().describe('Account ID to start watching'),
-  topicName: z.string().min(1).describe('Google Cloud Pub/Sub topic name (e.g., projects/my-project/topics/gmail-push)'),
+  topicName: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('Google Cloud Pub/Sub topic name (Gmail only; e.g., projects/my-project/topics/gmail-push)'),
   labelIds: z.array(z.string()).optional().describe('Labels to watch (default: INBOX)'),
 });
 
@@ -91,6 +95,29 @@ Use mail_watch_status to check expiration and mail_watch_stop to disable.`,
       };
     }
 
+    // Outlook has no self-hostable push: Graph change-notifications need a
+    // public HTTPS endpoint + 3-day renewal. Instead, the sync daemon
+    // delta-polls every active Outlook account automatically. "Starting a
+    // watch" for Outlook is therefore informational — it confirms the account
+    // is eligible for delta-polling (it must have run an initial mail_sync to
+    // obtain a deltaToken).
+    if (account.provider === EmailProvider.OUTLOOK) {
+      const hasDelta = Boolean(account.delta_token);
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: true,
+            accountId: input.accountId,
+            email: account.email,
+            error: hasDelta
+              ? 'Outlook uses delta-polling, not push. This account is delta-polled automatically while the sync daemon runs (intentmail serve / startDaemon).'
+              : 'Outlook uses delta-polling, not push. Run mail_sync once to establish a deltaToken; the daemon will then delta-poll this account automatically.',
+          }, null, 2),
+        }],
+      };
+    }
+
     if (account.provider !== EmailProvider.GMAIL) {
       return {
         content: [{
@@ -99,7 +126,21 @@ Use mail_watch_status to check expiration and mail_watch_stop to disable.`,
             success: false,
             accountId: input.accountId,
             email: account.email,
-            error: 'Push notifications only supported for Gmail accounts',
+            error: `Push notifications not supported for provider ${account.provider}`,
+          }, null, 2),
+        }],
+      };
+    }
+
+    if (!input.topicName) {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: false,
+            accountId: input.accountId,
+            email: account.email,
+            error: 'topicName is required for Gmail push notifications.',
           }, null, 2),
         }],
       };
