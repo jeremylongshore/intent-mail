@@ -177,7 +177,7 @@ export class OutlookSync {
 
     let messagesAdded = 0;
     let messagesDeleted = 0;
-    let labelsChanged = 0;
+    const labelsChanged = 0;
     let currentDeltaLink = deltaLink;
     let newDeltaLink = '';
 
