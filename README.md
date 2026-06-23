@@ -5,30 +5,62 @@ Multi-surface email platform with MCP server, Discord bot, and web dashboard. AI
 ## What This Is
 
 A complete email management platform:
-- **MCP Server**: 19 tools for programmatic email access
+- **MCP Server**: 44 tools for programmatic email access (Gmail + Outlook)
+- **Claude Code plugin**: install once for the `email-checkin`,
+  `email-triage-actions`, and `email-project-context` skills (see below)
 - **Discord Bot**: Slash commands for inbox management
 - **Web Dashboard**: React/PWA for browser-based access
 - **Team Collaboration**: Shared inboxes, assignments, analytics
-- **AI Features**: Smart drafts, semantic search, inbox triage
+- **AI Features**: Daily-digest, smart drafts, semantic search, inbox triage
 
 ---
 
 ## Status
 
-**v0.4.0** - All core epics complete.
+**v0.4.1**
 
 **Implemented:**
 - Gmail connector (OAuth, History API delta sync)
-- 19 MCP tools with rules engine + rollback
+- Outlook connector (OAuth PKCE, Microsoft Graph delta sync, flag/move/folders,
+  attachment extraction, delta-poll "watch")
+- 44 MCP tools with rules engine + rollback
+- AI daily-digest + live-artifact daily-review surface
+- OAuth tokens encrypted at rest (AES-256-GCM)
 - Discord bot with slash commands
 - Web dashboard with PWA support
 - Team collaboration (shared inboxes, assignments)
 - AI features (drafts, semantic search, triage)
 
 **Not done:**
-- Outlook connector OAuth testing
-- Integration tests with real Gmail
+- Integration tests against a live mailbox (gated suite)
 - Production deployment validation
+
+---
+
+## Use as a Claude Code plugin
+
+IntentMail ships as a self-hosted Claude Code plugin — *you* hold the OAuth
+token and the mailbox never leaves your machine.
+
+```bash
+git clone https://github.com/jeremylongshore/intent-mail
+cd intent-mail
+npm ci --omit=dev && npm run build   # build dist/ (the MCP server entry)
+```
+
+The plugin manifest is `.claude-plugin/plugin.json`; it wires the local
+`intentmail` MCP server over stdio (`node bin/intentmail.js serve`), so its
+tools resolve as `mcp__intentmail__mail_*`. It bundles three skills:
+
+| Skill | What it does |
+| --- | --- |
+| `email-checkin` | Read-only daily digest — sync, triage (P1–P4 + "why"), summarize long threads, group, surface high-priority / needs-response. |
+| `email-triage-actions` | Mutating, dry-run-first — archive/flag/move/draft and two-phase staged deletes, all audited + reversible. |
+| `email-project-context` | Reads a plain-language `context/projects.md` and turns filing/priority intent into IntentMail rules (previewed before creation). |
+
+Set `INTENTMAIL_MASTER_KEY` (see `.env.example`) so token encryption is keyed
+explicitly in production. Configure an account with `mail_auth_start` and an AI
+provider key, then ask Claude to "check my inbox".
 
 ---
 
@@ -132,38 +164,44 @@ Click the URL, authorize, and you're ready!
 
 ---
 
-## MCP Tools (19 Total)
+## MCP Tools (44 Total)
 
 ### Authentication & Accounts
 - `health_check` - Server status and capabilities
-- `mail_auth_start` - Start OAuth flow (Gmail/Outlook)
-- `mail_auth_complete` - Complete OAuth with code
+- `mail_auth_start` / `mail_auth_complete` - OAuth flow (Gmail/Outlook)
 - `mail_list_accounts` - List connected accounts
 
 ### Email Operations
-- `mail_sync` - Sync emails from provider (delta sync)
-- `mail_sync_stats` - View sync statistics
-- `mail_search` - Full-text search with filters
-- `mail_get_thread` - Get email thread with all messages
-- `mail_send` - Send email with threading support
+- `mail_sync` / `mail_sync_stats` - Delta sync + statistics
+- `mail_search` / `mail_semantic_search` / `mail_parse_query` - Search
+- `mail_get_thread` - Thread with all messages
+- `mail_send` / `mail_draft` / `mail_compose_suggest` - Compose & send
 
-### Labels & Organization
-- `mail_list_labels` - List all labels/folders
-- `mail_apply_label` - Apply labels to emails
+### Daily Review & AI
+- `mail_daily_digest` - Structured daily-review payload (stats, priority groups, why)
+- `mail_triage` - Per-email P1–P4 priority + action + why + deadline
+- `mail_summarize` - Long-thread / message summaries
+
+### Actions (write-through, provider-routed)
+- `mail_action` - Consolidated op: mark_read / archive / flag / move / stage_delete / unsubscribe
+- `mail_flag` - Flag / unflag (Outlook flag, Gmail STARRED)
+- `mail_move` - Move to folder (Outlook) / relabel (Gmail)
+- `mail_list_folders` - Folders (Outlook) / labels (Gmail)
+- `mail_list_labels` / `mail_apply_label` - Labels
 
 ### Attachments
-- `mail_list_attachments` - List email attachments
-- `mail_get_attachment` - Download attachment
+- `mail_list_attachments` / `mail_get_attachment` / `mail_extract_attachments` / `mail_attachment_stats`
 
-### Rules & Automation
-- `mail_list_rules` - List automation rules
-- `mail_create_rule` - Create new rule
-- `mail_delete_rule` - Delete rule
-- `mail_apply_rule` - Apply rule with dry-run support
+### Safe Deletion (two-phase)
+- `mail_stage_delete` / `mail_list_staged` / `mail_unstage` / `mail_commit_deletions` / `mail_deletion_log` / `mail_find_duplicates`
 
-### Audit & Rollback
-- `mail_get_audit_log` - View execution history
-- `mail_rollback` - Rollback rule executions
+### Rules, Audit & Rollback
+- `mail_list_rules` / `mail_create_rule` / `mail_delete_rule` / `mail_apply_rule`
+- `mail_get_audit_log` / `mail_rollback`
+
+### Real-time Sync & Analytics
+- `mail_watch_start` / `mail_watch_stop` / `mail_watch_status` (Gmail push; Outlook delta-poll)
+- `mail_analytics_summary` / `mail_analytics_query` / `mail_export_parquet`
 
 ---
 
@@ -177,7 +215,7 @@ Click the URL, authorize, and you're ready!
 ┌────────────────▼─────────────────────────┐
 │   IntentMail MCP Server (Node.js)        │
 │   ┌────────────────────────────────────┐ │
-│   │ 19 MCP Tools                       │ │
+│   │ 44 MCP Tools                       │ │
 │   │ (search, send, rules, rollback)    │ │
 │   └──────────────┬─────────────────────┘ │
 │                  │                        │
@@ -392,7 +430,7 @@ We welcome contributions! See [Contributing Guide](000-docs/032-DR-GUID-contribu
 intent-mail/
 ├── src/
 │   ├── index.ts              # MCP server entry point
-│   ├── mcp/tools/            # 19 MCP tool implementations
+│   ├── mcp/tools/            # 44 MCP tool implementations
 │   ├── connectors/           # Gmail, Outlook, IMAP
 │   ├── rules/                # Rules engine + parser
 │   ├── storage/              # SQLite + migrations
@@ -407,7 +445,7 @@ intent-mail/
 
 ## License
 
-TBD - To be determined once project reaches beta.
+Apache-2.0 — see [LICENSE](./LICENSE).
 
 ---
 
