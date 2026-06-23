@@ -503,3 +503,15 @@ export function getEmailsByThreadId(threadId: string): Email[] {
 
   return rows.map(rowToEmail);
 }
+
+/**
+ * Get thread size (count of emails in thread)
+ */
+export function getThreadSize(threadId: string): number {
+  const db = getDatabase();
+
+  const stmt = db.prepare('SELECT COUNT(*) as count FROM emails WHERE thread_id = ?');
+  const result = stmt.get(threadId) as { count: number };
+
+  return result.count;
+}

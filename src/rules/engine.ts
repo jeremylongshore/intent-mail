@@ -14,7 +14,7 @@ import {
   RuleExecutionResult,
 } from '../types/rule.js';
 import { Email, EmailFlag } from '../types/email.js';
-import { addLabels, removeLabels, updateEmailFlags, getEmailById } from '../storage/services/email-storage.js';
+import { addLabels, removeLabels, updateEmailFlags, getEmailById, getThreadSize } from '../storage/services/email-storage.js';
 import {
   createAuditLogEntry,
   captureEmailState,
@@ -51,8 +51,8 @@ function evaluateCondition(email: Email, condition: RuleCondition): boolean {
       fieldValue = email.hasAttachments;
       break;
     case RuleConditionField.THREAD_SIZE:
-      // This would require counting emails in thread - for now, return 1
-      fieldValue = 1;
+      // Count emails in the same thread
+      fieldValue = email.threadId ? getThreadSize(email.threadId) : 1;
       break;
     case RuleConditionField.DATE:
       fieldValue = email.date;
