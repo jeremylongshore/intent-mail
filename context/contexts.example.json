@@ -1,0 +1,11 @@
+{
+  "_comment": "Copy to context/contexts.json. Handles are referenced as @project:<handle> / @client:<handle> in drafts and instructions; resolved context is injected for the AI. Keep descriptions short and factual.",
+  "projects": {
+    "q3-launch": "The Q3 product launch. Owner: me. Go-live end of quarter. Anything mentioning the launch checklist or go-live is time-sensitive.",
+    "intentmail": "Open-source self-hosted email MCP. Public repo github.com/jeremylongshore/intent-mail."
+  },
+  "clients": {
+    "acme": "Acme Corp — active paid engagement, renewal in Q3. Primary contact jane@acme.com (PM). Anything mentioning renewal or SOW needs same-day response.",
+    "globex": "Globex — prospect, not yet signed. Medium priority."
+  }
+}

@@ -58,6 +58,7 @@ import { mailMoveTool } from './mcp/tools/mail-move.js';
 import { mailListFoldersTool } from './mcp/tools/mail-list-folders.js';
 import { mailDailyDigestTool } from './mcp/tools/mail-daily-digest.js';
 import { mailActionTool } from './mcp/tools/mail-action.js';
+import { mailListContextsTool } from './mcp/tools/mail-list-contexts.js';
 import { initDatabase, closeDatabase } from './storage/database.js';
 import { runMigrations } from './storage/migrations.js';
 import { initSyncMetricsTable } from './storage/services/sync-metrics.js';
@@ -118,6 +119,7 @@ async function main() {
     mailListFoldersTool,
     mailDailyDigestTool,
     mailActionTool,
+    mailListContextsTool,
   ];
 
   // Create MCP server instance
