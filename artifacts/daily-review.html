@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IntentMail — Daily Review</title>
+  <!--
+    IntentMail Live Artifact — Daily Review
+    =======================================
+    A self-contained, interactive daily-email review surface. It renders the
+    structured payload produced by the `mail_daily_digest` MCP tool.
+
+    HOW IT GETS DATA
+    ----------------
+    Claude calls `mail_daily_digest`, then sets the payload here, replacing the
+    sample object in the `window.__DIGEST__ = {...}` block at the bottom (or
+    posting it with `postMessage({type:'intentmail:digest', digest})`).
+
+    HOW ACTIONS WORK
+    ----------------
+    Artifacts run sandboxed and cannot call MCP tools directly. Each action
+    button therefore emits the exact `mail_action` call to make: it copies the
+    request to the clipboard, posts an `intentmail:action` message to the host,
+    and shows a toast ("Ask Claude: archive email 3"). The real round-trip
+    (optimistic row patching) lives in the web app, which calls the same engine
+    over a local /api. The button also optimistically dims/updates the row so
+    the artifact feels live.
+  -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --surface-2: #f0f2f5;
+      --border: #e2e6ec;
+      --text: #1c2530;
+      --text-dim: #5b6675;
+      --text-faint: #8a94a3;
+      --accent: #3b6cf6;
+      --accent-weak: #e7eefe;
+      /* Priority scale */
+      --p1: #e5484d; --p1-bg: #fdecec;
+      --p2: #f5a524; --p2-bg: #fdf3e3;
+      --p3: #3b6cf6; --p3-bg: #e9effe;
+      --p4: #8a94a3; --p4-bg: #f0f2f5;
+      --radius: 12px;
+      --shadow: 0 1px 2px rgba(20,30,45,.06), 0 8px 24px rgba(20,30,45,.06);
+      --row-pad: 14px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root[data-theme="auto"] {
+        --bg: #0e1116; --surface: #161b22; --surface-2: #1c232c; --border: #2a323d;
+        --text: #e6edf3; --text-dim: #9aa6b2; --text-faint: #6e7986;
+        --accent: #5b86ff; --accent-weak: #18233f;
+        --p1-bg: #2a1718; --p2-bg: #2a2113; --p3-bg: #161f33; --p4-bg: #1c232c;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0e1116; --surface: #161b22; --surface-2: #1c232c; --border: #2a323d;
+      --text: #e6edf3; --text-dim: #9aa6b2; --text-faint: #6e7986;
+      --accent: #5b86ff; --accent-weak: #18233f;
+      --p1-bg: #2a1718; --p2-bg: #2a2113; --p3-bg: #161f33; --p4-bg: #1c232c;
+    }
+    :root[data-density="compact"] { --row-pad: 8px; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 24px 18px 64px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.01em; }
+    .brand .dot { width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px var(--accent-weak); }
+    .toolbtns { display:flex; gap:8px; }
+    .iconbtn { border:1px solid var(--border); background:var(--surface); color:var(--text-dim);
+      border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; }
+    .iconbtn:hover { color:var(--text); border-color:var(--accent); }
+
+    .stats { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:22px; }
+    .stat { flex:1 1 120px; background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow); }
+    .stat .n { font-size:26px; font-weight:750; letter-spacing:-.02em; }
+    .stat .l { color:var(--text-dim); font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; }
+    .stat.hot .n { color:var(--p1); }
+
+    .suggestions { display:flex; flex-direction:column; gap:6px; margin-bottom:20px; }
+    .suggestion { background:var(--accent-weak); color:var(--text); border-radius:10px; padding:8px 12px; font-size:13.5px; }
+
+    .group { margin-bottom:18px; }
+    .group-head { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;
+      padding:6px 2px; }
+    .group-head .chev { transition:transform .15s ease; color:var(--text-faint); }
+    .group.collapsed .chev { transform:rotate(-90deg); }
+    .group-title { font-weight:650; }
+    .group-count { color:var(--text-faint); font-size:13px; }
+    .group-body { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+    .group.collapsed .group-body { display:none; }
+
+    .row { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+      padding:var(--row-pad) 16px; box-shadow:var(--shadow); transition:opacity .2s, transform .1s; }
+    .row.done { opacity:.45; }
+    .row-top { display:flex; align-items:flex-start; gap:10px; }
+    .chip { flex:none; font-size:11px; font-weight:750; padding:3px 7px; border-radius:6px; letter-spacing:.02em; }
+    .chip.P1 { color:var(--p1); background:var(--p1-bg); }
+    .chip.P2 { color:var(--p2); background:var(--p2-bg); }
+    .chip.P3 { color:var(--p3); background:var(--p3-bg); }
+    .chip.P4 { color:var(--p4); background:var(--p4-bg); }
+    .subjwrap { flex:1; min-width:0; }
+    .subjline { display:flex; align-items:center; gap:8px; }
+    .subject { font-weight:620; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .badge { flex:none; font-size:11px; color:var(--text-dim); background:var(--surface-2);
+      border:1px solid var(--border); border-radius:20px; padding:1px 8px; }
+    .needs { color:var(--p1); border-color:var(--p1-bg); }
+    .from { color:var(--text-dim); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .why { display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12.5px; color:var(--text-dim); }
+    .why .lbl { font-weight:650; color:var(--accent); }
+    .summary { margin-top:6px; color:var(--text); font-size:13.5px; }
+    .deadline { color:var(--p1); font-weight:600; }
+    .actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+    .act { border:1px solid var(--border); background:var(--surface-2); color:var(--text-dim);
+      border-radius:7px; padding:4px 10px; font-size:12.5px; cursor:pointer; }
+    .act:hover { color:var(--text); border-color:var(--accent); background:var(--accent-weak); }
+    .act.danger:hover { color:var(--p1); border-color:var(--p1); background:var(--p1-bg); }
+
+    .toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+      background:var(--text); color:var(--surface); padding:10px 16px; border-radius:10px;
+      font-size:13.5px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .2s; }
+    .toast.show { opacity:1; }
+    .empty { text-align:center; color:var(--text-faint); padding:60px 0; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useMemo, useCallback } = React;
+
+    const PRIORITY_LABEL = { P1: 'Urgent', P2: 'High', P3: 'Normal', P4: 'Low' };
+
+    function timeAgo(iso) {
+      const d = new Date(iso); if (isNaN(d)) return '';
+      const mins = Math.round((Date.now() - d.getTime()) / 60000);
+      if (mins < 60) return `${Math.max(0, mins)}m`;
+      const hrs = Math.round(mins / 60); if (hrs < 24) return `${hrs}h`;
+      return `${Math.round(hrs / 24)}d`;
+    }
+
+    function Toast({ msg }) {
+      return <div className={"toast" + (msg ? " show" : "")}>{msg}</div>;
+    }
+
+    function Stat({ n, label, hot }) {
+      return <div className={"stat" + (hot ? " hot" : "")}><div className="n">{n}</div><div className="l">{label}</div></div>;
+    }
+
+    function EmailRow({ email, onAction, done }) {
+      const date = timeAgo(email.date);
+      return (
+        <div className={"row" + (done ? " done" : "")}>
+          <div className="row-top">
+            <span className={"chip " + email.priority} title={PRIORITY_LABEL[email.priority]}>{email.priority}</span>
+            <div className="subjwrap">
+              <div className="subjline">
+                <span className="subject">{email.subject || '(no subject)'}</span>
+                {email.needsResponse && <span className="badge needs">needs reply</span>}
+                {email.collapsed && <span className="badge">thread ×{email.threadSize}</span>}
+                {date && <span className="badge">{date}</span>}
+              </div>
+              <div className="from">{email.from?.name || email.from?.address}</div>
+              <div className="why"><span className="lbl">why</span> {email.why}</div>
+              <div className="summary">
+                {email.summary}
+                {email.deadline?.date && <span className="deadline"> · due {new Date(email.deadline.date).toLocaleDateString()}</span>}
+              </div>
+              <div className="actions">
+                {(email.actions || []).map(op => (
+                  <button key={op}
+                    className={"act" + (op === 'stage_delete' ? " danger" : "")}
+                    onClick={() => onAction(email, op)}>{op.replace('_', ' ')}</button>
+                ))}
+                {email.needsResponse && <button className="act" onClick={() => onAction(email, 'draft')}>draft reply</button>}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function Group({ group, onAction, doneIds }) {
+      const [open, setOpen] = useState(true);
+      return (
+        <div className={"group" + (open ? "" : " collapsed")}>
+          <div className="group-head" onClick={() => setOpen(o => !o)}>
+            <span className="chev">▾</span>
+            <span className="group-title">{group.label}</span>
+            <span className="group-count">{group.emails.length}</span>
+          </div>
+          <div className="group-body">
+            {group.emails.map(e => (
+              <EmailRow key={e.emailId} email={e} onAction={onAction} done={doneIds.has(e.emailId)} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function App({ digest }) {
+      const [doneIds, setDoneIds] = useState(() => new Set());
+      const [toast, setToast] = useState('');
+      const [theme, setTheme] = useState('auto');
+      const [compact, setCompact] = useState(false);
+
+      const setT = (t) => { setTheme(t); document.documentElement.setAttribute('data-theme', t); };
+      const setD = (c) => { setCompact(c); document.documentElement.setAttribute('data-density', c ? 'compact' : 'comfortable'); };
+
+      const onAction = useCallback((email, op) => {
+        // mail_action / mail_draft request — emitted for the host to execute.
+        const call = op === 'draft'
+          ? { tool: 'mail_draft', args: { emailId: email.emailId, mode: 'reply' } }
+          : { tool: 'mail_action', args: { emailId: email.emailId, op } };
+        const text = `${call.tool}(${JSON.stringify(call.args)})`;
+        try { navigator.clipboard && navigator.clipboard.writeText(text); } catch (e) {}
+        try { window.parent && window.parent.postMessage({ type: 'intentmail:action', call }, '*'); } catch (e) {}
+        setToast(`Ask Claude: ${op.replace('_',' ')} "${(email.subject||'').slice(0,32)}" — copied`);
+        setTimeout(() => setToast(''), 2600);
+        if (op !== 'flag' && op !== 'draft') {
+          setDoneIds(prev => { const n = new Set(prev); n.add(email.emailId); return n; });
+        }
+      }, []);
+
+      if (!digest || !digest.groups || digest.groups.length === 0) {
+        return <div className="wrap"><div className="empty">No digest data yet. Run <code>mail_daily_digest</code> and drop the payload in.</div></div>;
+      }
+
+      const s = digest.stats || {};
+      return (
+        <div className="wrap">
+          <div className="topbar">
+            <div className="brand"><span className="dot"></span> IntentMail · Daily Review</div>
+            <div className="toolbtns">
+              <button className="iconbtn" onClick={() => setD(!compact)}>{compact ? 'Comfortable' : 'Compact'}</button>
+              <button className="iconbtn" onClick={() => setT(theme === 'dark' ? 'auto' : 'dark')}>{theme === 'dark' ? 'Auto' : 'Dark'}</button>
+            </div>
+          </div>
+
+          <div className="stats">
+            <Stat n={s.total ?? 0} label="In review" />
+            <Stat n={s.new ?? 0} label="New" />
+            <Stat n={s.needResponse ?? 0} label="Need response" />
+            <Stat n={s.highPriority ?? 0} label="High priority" hot={(s.highPriority ?? 0) > 0} />
+          </div>
+
+          {digest.suggestions && digest.suggestions.length > 0 && (
+            <div className="suggestions">
+              {digest.suggestions.map((sug, i) => <div className="suggestion" key={i}>💡 {sug}</div>)}
+            </div>
+          )}
+
+          {digest.groups.map(g => (
+            <Group key={g.category} group={g} onAction={onAction} doneIds={doneIds} />
+          ))}
+
+          <Toast msg={toast} />
+        </div>
+      );
+    }
+
+    // Accept a digest pushed in via postMessage as well.
+    function mount(digest) {
+      ReactDOM.createRoot(document.getElementById('root')).render(<App digest={digest} />);
+    }
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'intentmail:digest') mount(e.data.digest);
+    });
+    mount(window.__DIGEST__ || null);
+  </script>
+
+  <!--
+    SAMPLE PAYLOAD — replace window.__DIGEST__ with the real mail_daily_digest
+    output. The shape matches src/ai/daily-digest.ts -> DailyDigest.
+  -->
+  <script>
+    window.__DIGEST__ = {
+      generatedAt: new Date().toISOString(),
+      stats: { total: 6, new: 4, needResponse: 3, highPriority: 2, canArchive: 2 },
+      suggestions: ["2 high-priority item(s) need attention", "3 emails are awaiting a response"],
+      groups: [
+        {
+          category: "action-required", label: "Action required", priorityRank: 1,
+          emails: [
+            {
+              emailId: 1, providerMessageId: "PM-1", threadId: "T1", subject: "Acme contract redline before signing",
+              from: { name: "Jane (Acme)", address: "jane@acme.com" }, date: new Date(Date.now()-3600e3).toISOString(),
+              isRead: false, priority: "P1", priorityRank: 1, actionType: "reply-needed", needsResponse: true,
+              urgencySignals: ["deadline-mentioned","sender-vip"], deadline: { date: new Date(Date.now()+86400e3).toISOString(), confidence: 0.9 },
+              why: "client VIP + hard deadline tomorrow 5pm", summary: "Wants section 4 changed before they sign the SOW.",
+              category: "action-required", threadSize: 3, collapsed: true, citations: ["section 4 redline","sign by Fri"],
+              actions: ["mark_read","archive","flag","move","stage_delete"]
+            },
+            {
+              emailId: 2, providerMessageId: "PM-2", subject: "Wire confirmation flagged by bank",
+              from: { name: "First Bank", address: "alerts@firstbank.com" }, date: new Date(Date.now()-7200e3).toISOString(),
+              isRead: false, priority: "P1", priorityRank: 1, actionType: "review", needsResponse: true,
+              urgencySignals: ["time-sensitive"], why: "money movement needs verification",
+              summary: "Transfer held for verification; respond to release.", category: "action-required",
+              threadSize: 1, collapsed: false, citations: ["verify transfer"], actions: ["mark_read","archive","flag","move","stage_delete"]
+            }
+          ]
+        },
+        {
+          category: "newsletter", label: "Newsletters", priorityRank: 4,
+          emails: [
+            {
+              emailId: 3, providerMessageId: "PM-3", subject: "The Weekly Brief — 12 stories",
+              from: { name: "Weekly Brief", address: "news@brief.com" }, date: new Date(Date.now()-21600e3).toISOString(),
+              isRead: false, priority: "P4", priorityRank: 4, actionType: "unsubscribe", needsResponse: false,
+              urgencySignals: [], why: "bulk newsletter, low signal", summary: "Roundup of industry stories; nothing actionable.",
+              category: "newsletter", threadSize: 1, collapsed: false, citations: ["industry roundup"],
+              actions: ["mark_read","archive","flag","move","stage_delete","unsubscribe"]
+            }
+          ]
+        }
+      ]
+    };
+  </script>
+</body>
+</html>
