@@ -22,23 +22,25 @@ argument-hint: '[accountId | email]'
 
 # Email Check-in — your read-only daily inbox briefing
 
-A morning briefing over your own mailbox. This skill **reads and reasons; it never
-mutates.** No archiving, no sending, no flag changes — that is the
+## Overview
+
+A morning briefing over your own mailbox. This skill **reads and reasons; it
+never mutates.** No archiving, no sending, no flag changes — that is the
 `email-triage-actions` skill's job. The point is a fast, honest "what actually
-needs me today" without touching anything.
+needs me today" without touching anything. It produces a stats header,
+priority-ranked category groups, and a per-email line carrying the priority,
+the **"why"**, action-type, urgency signals, any deadline, and a one-line
+summary (long threads collapsed to a `summarized ×N` line).
 
-## What it produces
+## Prerequisites
 
-A single digest with:
+- The intent-mail plugin installed (auto-wires the local `intentmail` MCP
+  server over stdio).
+- A configured account via `mail_auth_start` (Gmail or Outlook).
+- An AI provider key (Anthropic / OpenAI / Groq, or local Ollama) — triage and
+  summarization are AI-backed.
 
-1. **Stats header** — e.g. `45 new · 12 need response · 3 high-priority`.
-2. **Priority-ranked groups** — category sections (Work, Clients, Finance, …),
-   each ordered by priority.
-3. **Per-email line** — priority chip (P1–P4), the **"why"** (one line on *why it
-   was ranked this way*), action-type, urgency signals, any detected deadline,
-   and a one-line summary. Long threads are collapsed to a `summarized ×N` line.
-
-## How to run it
+## Instructions
 
 1. **Pick the account.** If the user named one, resolve it; otherwise call
    `mcp__intentmail__mail_list_accounts` and use the active account (ask if
@@ -53,24 +55,34 @@ A single digest with:
    then the high-priority and needs-response items, then the rest grouped by
    category. Keep each item to its priority + why + one-line summary.
 
-### Fallback (if the digest tool is unavailable)
+If the digest tool is unavailable, assemble the same picture manually with
+`mcp__intentmail__mail_triage` (priority + why + action-type),
+`mcp__intentmail__mail_summarize` (long-thread summaries), and
+`mcp__intentmail__mail_search` (to scope the window, e.g. unread / last 24h).
 
-Assemble the same picture manually:
-- `mcp__intentmail__mail_triage` for priority + why + action-type.
-- `mcp__intentmail__mail_summarize` for long-thread summaries.
-- `mcp__intentmail__mail_search` to scope the window (e.g. unread, last 24h).
+## Output
 
-## Boundaries
+A single digest, rendered for the user:
 
-- **Read-only.** If the user asks to archive/flag/delete/draft/move, hand off to
-  the `email-triage-actions` skill — do not attempt those tools here (they are
-  not in this skill's allow-list).
-- **No overpromising.** Report what triage actually found. If priority is
-  uncertain, say so rather than inventing urgency.
-- **Self-hosted.** Everything runs locally against the user's own OAuth token;
-  never suggest uploading the mailbox anywhere.
+- **Stats header** — e.g. `45 new · 12 need response · 3 high-priority`.
+- **Priority-ranked groups** — category sections (Work, Clients, Finance, …),
+  each ordered by priority.
+- **Per-email line** — priority chip (P1–P4), the one-line "why", action-type,
+  urgency signals, any deadline, and a one-line summary. Long threads collapse
+  to a `summarized ×N` line.
 
-## Example
+## Error Handling
+
+- **No accounts / not authenticated** → tell the user to run `mail_auth_start`
+  first; do not guess.
+- **AI provider not configured** → report that triage/summary need an AI key;
+  fall back to a flat unread list from `mail_search` rather than failing silently.
+- **Action requested** → this skill is read-only; if the user asks to
+  archive/flag/delete/draft/move, hand off to `email-triage-actions` (those
+  tools are not in this skill's allow-list).
+- **Uncertain priority** → say so rather than inventing urgency.
+
+## Examples
 
 > **Inbox check-in — 45 new · 12 need response · 3 high-priority**
 >
@@ -83,3 +95,13 @@ Assemble the same picture manually:
 > **🟡 Needs response (10 more)** …
 >
 > **Work (18)** · **Newsletters (9, summarized)** …
+
+User: "what's high priority in my email this morning?" → sync the active
+account, call `mail_daily_digest`, render the high-priority + needs-response
+groups first.
+
+## Resources
+
+- `mail_daily_digest` payload shape: `src/ai/daily-digest.ts` (`DailyDigest`).
+- Visual rendering: `artifacts/daily-review.html`.
+- Companion mutating skill: `email-triage-actions`.
