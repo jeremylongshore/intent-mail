@@ -13,9 +13,10 @@ import { Compose } from './components/Compose.js';
 import { Search } from './components/Search.js';
 import { AuthProvider, useAuth } from './hooks/useAuth.js';
 import { EmailProvider } from './hooks/useEmailConnector.js';
+import { DailyReview } from './components/daily-review/DailyReview.js';
 import type { Email } from '../agents/email-connector.js';
 
-type View = 'inbox' | 'detail' | 'compose' | 'search';
+type View = 'daily-review' | 'inbox' | 'detail' | 'compose' | 'search';
 
 interface AppState {
   view: View;
@@ -27,7 +28,7 @@ interface AppState {
 function AppContent() {
   const { isAuthenticated, login, logout, loading: authLoading } = useAuth();
   const [state, setState] = useState<AppState>({
-    view: 'inbox',
+    view: 'daily-review',
     selectedEmail: null,
     replyTo: null,
     searchQuery: '',
@@ -81,6 +82,9 @@ function AppContent() {
       <header className="app-header">
         <h1>IntentMail</h1>
         <nav className="app-nav">
+          <button onClick={() => navigate('daily-review')} className={state.view === 'daily-review' ? 'active' : ''}>
+            Daily Review
+          </button>
           <button onClick={() => navigate('inbox')} className={state.view === 'inbox' ? 'active' : ''}>
             Inbox
           </button>
@@ -97,6 +101,7 @@ function AppContent() {
       </header>
 
       <main className="app-main">
+        {state.view === 'daily-review' && <DailyReview />}
         {state.view === 'inbox' && (
           <Inbox onSelect={selectEmail} onCompose={startCompose} onSearch={startSearch} />
         )}

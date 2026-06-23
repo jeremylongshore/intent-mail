@@ -14,7 +14,7 @@ export interface ApiServerOptions {
   port?: number;
   /** Host to bind (default 127.0.0.1 — loopback only). */
   host?: string;
-  /** Allowed CORS origin for the dev front-end (default http://localhost:5173). */
+  /** Allowed CORS origin for the dev front-end (default http://localhost:3000). */
   corsOrigin?: string;
 }
 
@@ -48,7 +48,7 @@ function readBody(req: IncomingMessage): Promise<unknown> {
  * Build the API HTTP server. Call `.listen()` yourself, or use `startApiServer`.
  */
 export function createApiServer(options: ApiServerOptions = {}): Server {
-  const corsOrigin = options.corsOrigin ?? 'http://localhost:5173';
+  const corsOrigin = options.corsOrigin ?? 'http://localhost:3000';
 
   return createServer(async (req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url ?? '/', 'http://localhost');
