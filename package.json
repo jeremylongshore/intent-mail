@@ -43,7 +43,7 @@
     "automation"
   ],
   "author": "Jeremy Longshore <jeremy@intentsolutions.io>",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/intent-solutions-io/intent-mail/issues"
   },

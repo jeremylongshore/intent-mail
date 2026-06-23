@@ -133,6 +133,25 @@ ALTER TABLE accounts ADD COLUMN token_enc_version INTEGER NOT NULL DEFAULT 0;
 `,
     checksum: '', // Will be calculated
   },
+  {
+    version: 6,
+    name: 'add_digest_cache',
+    up: `
+-- Per-email cache of the AI-derived digest entry (triage + summary), keyed by
+-- (email_id, updated_at) so re-opening the daily digest is instant: only
+-- emails whose updated_at changed since last digest are recomputed.
+CREATE TABLE IF NOT EXISTS digest_cache (
+  email_id INTEGER NOT NULL,
+  updated_at TEXT NOT NULL,
+  payload TEXT NOT NULL,   -- JSON of the cached per-email digest entry
+  cached_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (email_id, updated_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_digest_cache_email ON digest_cache(email_id);
+`,
+    checksum: '', // Will be calculated
+  },
 ];
 
 // Calculate checksums for all migrations

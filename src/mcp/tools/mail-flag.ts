@@ -9,8 +9,7 @@
  */
 
 import { z } from 'zod';
-import { getProviderClientForAccount } from '../../connectors/provider-client.js';
-import { getEmailById, updateEmailFlags } from '../../storage/services/email-storage.js';
+import { flagAction } from '../../connectors/email-actions.js';
 import { EmailFlag } from '../../types/email.js';
 
 const MailFlagInputSchema = z.object({
@@ -51,44 +50,14 @@ export const mailFlagTool = {
   handler: async (args: unknown) => {
     const input = MailFlagInputSchema.parse(args);
 
-    const email = getEmailById(input.emailId);
-    if (!email) {
-      throw new Error(`Email with ID ${input.emailId} not found`);
-    }
-
-    const client = await getProviderClientForAccount(email.accountId);
-
-    if (client.provider === 'outlook') {
-      if (input.flagged) {
-        await client.outlook!.setFlag(email.providerMessageId);
-      } else {
-        await client.outlook!.clearFlag(email.providerMessageId);
-      }
-    } else {
-      // Gmail: STARRED label is the flag analog.
-      await client.gmail!.modifyMessageLabels(
-        email.providerMessageId,
-        input.flagged ? ['STARRED'] : undefined,
-        input.flagged ? undefined : ['STARRED']
-      );
-    }
-
-    // Mirror into the local flags array.
-    const flags = new Set(email.flags);
-    if (input.flagged) {
-      flags.add(EmailFlag.FLAGGED);
-    } else {
-      flags.delete(EmailFlag.FLAGGED);
-    }
-    const newFlags = Array.from(flags);
-    updateEmailFlags(input.emailId, newFlags);
+    const state = await flagAction(input.emailId, input.flagged);
 
     const output = {
       success: true,
       emailId: input.emailId,
-      provider: client.provider,
+      provider: state.provider,
       flagged: input.flagged,
-      flags: newFlags,
+      flags: state.flags,
     };
 
     return {

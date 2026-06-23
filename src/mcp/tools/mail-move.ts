@@ -11,8 +11,7 @@
  */
 
 import { z } from 'zod';
-import { getProviderClientForAccount } from '../../connectors/provider-client.js';
-import { getEmailById, addLabels, removeLabels } from '../../storage/services/email-storage.js';
+import { moveAction } from '../../connectors/email-actions.js';
 
 const MailMoveInputSchema = z.object({
   emailId: z.number().int().positive().describe('Local email ID to move'),
@@ -31,9 +30,6 @@ const MailMoveOutputSchema = z.object({
   destination: z.string(),
   labels: z.array(z.string()),
 });
-
-/** Destinations that mean "remove from inbox" on Gmail. */
-const ARCHIVE_ALIASES = new Set(['archive', 'archived', 'all mail', 'allmail']);
 
 export const mailMoveTool = {
   definition: {
@@ -57,36 +53,14 @@ export const mailMoveTool = {
   handler: async (args: unknown) => {
     const input = MailMoveInputSchema.parse(args);
 
-    const email = getEmailById(input.emailId);
-    if (!email) {
-      throw new Error(`Email with ID ${input.emailId} not found`);
-    }
-
-    const client = await getProviderClientForAccount(email.accountId);
-    const isArchive = ARCHIVE_ALIASES.has(input.destination.trim().toLowerCase());
-
-    if (client.provider === 'outlook') {
-      await client.outlook!.moveMessage(email.providerMessageId, input.destination);
-      // Outlook folders are not mirrored into local labels; leave labels as-is.
-    } else {
-      // Gmail: relabel.
-      if (isArchive) {
-        await client.gmail!.modifyMessageLabels(email.providerMessageId, undefined, ['INBOX']);
-        removeLabels(input.emailId, ['INBOX']);
-      } else {
-        await client.gmail!.modifyMessageLabels(email.providerMessageId, [input.destination], undefined);
-        addLabels(input.emailId, [input.destination]);
-      }
-    }
-
-    const updated = getEmailById(input.emailId);
+    const state = await moveAction(input.emailId, input.destination);
 
     const output = {
       success: true,
       emailId: input.emailId,
-      provider: client.provider,
+      provider: state.provider,
       destination: input.destination,
-      labels: updated?.labels ?? email.labels,
+      labels: state.labels,
     };
 
     return {
