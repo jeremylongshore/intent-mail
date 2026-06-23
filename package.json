@@ -14,6 +14,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "dev:web": "vite",
+    "dev:web-api": "tsx src/web/server/standalone.ts",
     "build": "tsc",
     "build:web": "vite build",
     "preview:web": "vite preview",

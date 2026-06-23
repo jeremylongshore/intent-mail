@@ -5,11 +5,12 @@ export default defineConfig({
     // Include test files
     include: ['src/**/*.test.ts'],
 
-    // Exclude platform-specific code that requires optional deps
+    // Exclude the browser front-end (.tsx, vite-specific). The Node-side web
+    // API server under src/web/server IS tested.
     exclude: [
       'node_modules',
       'dist',
-      'src/web/**/*',
+      'src/web/**/*.tsx',
     ],
 
     // Use Node environment
