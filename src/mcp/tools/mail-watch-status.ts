@@ -84,7 +84,7 @@ Use this to monitor real-time sync health and identify watches that need renewal
     const input = MailWatchStatusInputSchema.parse(args);
     const db = getDatabase();
 
-    let accounts: Array<{
+    const accounts: Array<{
       accountId: number;
       email: string;
       provider: string;

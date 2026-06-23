@@ -116,7 +116,7 @@ Set deleteFromProvider=true to also delete from Gmail/Outlook (NOT YET IMPLEMENT
     }
 
     // Get email IDs to delete
-    let emailIds = input.emailIds;
+    const emailIds = input.emailIds;
     if (!emailIds || emailIds.length === 0) {
       // If no specific IDs provided with confirm=true, that's an error
       const output = {

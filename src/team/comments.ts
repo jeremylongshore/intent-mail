@@ -263,7 +263,7 @@ export function addReaction(
   if (!comment) return false;
 
   // Find existing reaction for this emoji
-  let reaction = comment.reactions.find((r) => r.emoji === emoji);
+  const reaction = comment.reactions.find((r) => r.emoji === emoji);
 
   if (reaction) {
     // Add user if not already reacted

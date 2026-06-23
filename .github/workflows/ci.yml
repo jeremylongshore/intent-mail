@@ -20,56 +20,18 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-        continue-on-error: true
 
       - name: Install dependencies
-        run: |
-          if [ -f "package.json" ]; then
-            npm ci || echo "⚠️  npm ci failed - no dependencies yet"
-          else
-            echo "📝 No package.json - skipping npm install (pre-implementation phase)"
-          fi
-        continue-on-error: true
+        run: npm ci
 
-      - name: Run linter
-        run: |
-          if [ -f "package.json" ] && grep -q "\"lint\"" package.json; then
-            npm run lint || echo "⚠️  Linting not configured yet"
-          else
-            echo "📝 Linting not configured (pre-implementation phase)"
-          fi
-        continue-on-error: true
+      - name: Lint
+        run: npm run lint
 
-      - name: Run type check
-        run: |
-          if [ -f "package.json" ] && grep -q "\"typecheck\"" package.json; then
-            npm run typecheck || echo "⚠️  Type checking not configured yet"
-          else
-            echo "📝 Type checking not configured (pre-implementation phase)"
-          fi
-        continue-on-error: true
+      - name: Type check
+        run: npm run typecheck
 
-      - name: Run unit tests
-        run: |
-          if [ -f "package.json" ] && grep -q "\"test\"" package.json; then
-            npm test || echo "⚠️  Tests not configured yet"
-          else
-            echo "📝 Tests not configured (pre-implementation phase)"
-          fi
-        continue-on-error: true
+      - name: Test + coverage
+        run: npm run test:cov
 
       - name: Build
-        run: |
-          if [ -f "package.json" ] && grep -q "\"build\"" package.json; then
-            npm run build || echo "⚠️  Build not configured yet"
-          else
-            echo "📝 Build not configured (pre-implementation phase)"
-          fi
-        continue-on-error: true
-
-      - name: Summary
-        if: always()
-        run: |
-          echo "✅ CI pipeline completed"
-          echo "📋 Note: This project is in Phase 2 (planning) - implementation starts in Phase 3"
-          echo "🔍 Some checks are placeholder and will be implemented during development"
+        run: npm run build
