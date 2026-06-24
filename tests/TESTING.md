@@ -45,6 +45,7 @@ frontend (`src/web`) and test/type/entrypoint files are excluded.
 | L2 lint | ✅ enforced | `npm run lint` (ESLint 8 + @typescript-eslint, `.eslintrc.cjs`) |
 | L3 unit | ✅ enforced | `npm test` (vitest, 192 tests) |
 | L3 coverage | ✅ enforced | `npm run test:cov` with the floor above |
+| L1 pre-commit | ✅ enforced | husky `.husky/pre-commit` runs lint + typecheck + tests (auto-installed via the `prepare` script) |
 | Escape-scan / bias / arch | ✅ available | vendored `scripts/audit-harness` (v0.1.0) |
 
 ## Frameworks
@@ -64,7 +65,6 @@ floor, this policy file, CI made blocking.
   warranted because OAuth tokens are handled.
 - **L3 mutation** — Stryker over the high-value core (rules engine, retry,
   token-crypto, daily-digest).
-- **L1 hooks** — a pre-commit hook running typecheck + test locally.
 - **Lint debt** — tighten `no-case-declarations` / `no-var-requires` from
   warning to error after cleaning `query-to-sql.ts` and `stores/index.ts`.
 
