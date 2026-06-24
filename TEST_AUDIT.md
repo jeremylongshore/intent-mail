@@ -28,7 +28,7 @@ Test framework: **vitest 4.0.16**. Tests co-located in `src/**/*.test.ts`
 | **L3** Unit & function | 🟢 Present | 192 tests, well-targeted (retry policy, Graph URL/empty-body/401, token crypto round-trip+tamper, provider routing, digest composition, action routing, context resolution, web router). **Bias scan: clean.** Gaps: no coverage measurement, no mutation. |
 | **L4** Integration & regression | 🟡 Partial | Real-DB integration test (token crypto + v1–v6 migrations against a temp SQLite). No contract tests, no Docker-backed integration. |
 | **L5** System quality | 🔴 Absent | No perf / a11y / security-scan. Mostly waivable for a local-first MCP, **except** a secret/dep security scan is warranted (handles OAuth tokens). |
-| **L6** E2E / BDD | 🔴 Absent (capable) | **Playwright is installed but entirely unused** — 0 `.feature` files, 0 specs, no `playwright.config`. The web dashboard + CLI have no smoke/e2e. |
+| **L6** E2E / BDD | 🔴 Absent | No `.feature` files, no e2e specs. The web dashboard + CLI have no smoke/e2e. (Playwright was removed as unused — no e2e layer by choice.) |
 | **L7** Acceptance / UAT | 🔴 Absent | No business-validation layer. |
 
 ## Gaps
@@ -67,7 +67,6 @@ Hand off to `/implement-tests` on a fresh `feat/` branch to:
 - install + configure ESLint (fix the L2 gate),
 - add `@vitest/coverage-v8` + a coverage floor,
 - scaffold `tests/TESTING.md` (classification + thresholds + waivers),
-- add a Playwright smoke test for the web `/api` + DailyReview,
 - (optional) add a pre-commit hook + a security scan.
 
 Staged for review — never auto-committed, and on a feature branch (not `main`).

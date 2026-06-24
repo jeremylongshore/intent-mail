@@ -50,7 +50,7 @@ frontend (`src/web`) and test/type/entrypoint files are excluded.
 ## Frameworks
 
 vitest 4 · @vitest/coverage-v8 · ESLint 8 + @typescript-eslint 6 · TypeScript
-strict (NodeNext) · Playwright 1.57 (installed, not yet wired).
+strict (NodeNext).
 
 ## Last audit
 
@@ -60,8 +60,6 @@ floor, this policy file, CI made blocking.
 
 ## Backlog (not in the lean pass)
 
-- **L6** — wire the installed Playwright into a smoke test for the web `/api` +
-  DailyReview and the CLI happy path.
 - **L5 security** — add a secret/dep scan (gitleaks / osv-scanner / semgrep);
   warranted because OAuth tokens are handled.
 - **L3 mutation** — Stryker over the high-value core (rules engine, retry,
