@@ -1,0 +1,21 @@
+# IntentMail pre-commit gate — fast local mirror of the CI gates.
+# Runs lint + typecheck + tests before every commit. Skip in an emergency
+# with `git commit --no-verify`. Coverage + build are left to CI (slower).
+#
+# Enforcement travels with the repo: this hook is installed automatically by
+# husky on `npm install` (the `prepare` script). Never references ~/.claude.
+
+# Skip when dependencies aren't installed (fresh clone mid-setup).
+if [ ! -d node_modules ]; then
+  echo "pre-commit: node_modules missing — run 'npm install' first (skipping checks)."
+  exit 0
+fi
+
+echo "pre-commit: lint…"
+npm run lint || exit 1
+
+echo "pre-commit: typecheck…"
+npm run typecheck || exit 1
+
+echo "pre-commit: tests…"
+npm test || exit 1
