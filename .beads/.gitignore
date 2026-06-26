@@ -49,3 +49,16 @@ bd.db
 # They would override fork protection in .git/info/exclude.
 # Config files (metadata.json, config.yaml) are tracked by git by default
 # since no pattern above ignores them.
+
+# Runtime locks / pids (bd-doctor: must not be tracked) — added 2026-06-25
+daemon.*
+*.lock
+*.pid
+dolt-monitor.pid.lock
+# Local-only export + credential key
+export-state.json
+.beads-credential-key
+# Embedded dolt + corrupt/backup artifacts
+embeddeddolt/
+*.corrupt.backup/
+issues.jsonl.backup
