@@ -59,10 +59,28 @@ strict (NodeNext).
 `TEST_AUDIT.md`. Lean remediation applied: ESLint config, coverage provider +
 floor, this policy file, CI made blocking.
 
+## Dependency audit (2026-06-26)
+
+`npm audit` triaged from **22 → 5**:
+- Cleared via `overrides` (no breaking direct-dep bumps): `minimatch ^9.0.9`
+  (clears the whole `@typescript-eslint/*` ReDoS cluster without the v8/ESLint-9
+  migration), `semver ^7.7.2`, `undici ^6.27.0`, `uuid ^11.1.1`.
+- Direct bump: `nodemailer` 7 → 9. Removed unused dep `md-to-pdf` (cleared
+  gray-matter / js-yaml / md-to-pdf). Declared `js-yaml` as a direct dep (it was
+  imported in `rules/parser.ts` but only resolved via hoisting).
+- **5 accepted residual (`fix=NONE`)**: `tar` / `cacache` / `make-fetch-happen`
+  / `node-gyp` / `duckdb` — a single chain off `duckdb@1.4.4`'s bundled
+  `node-gyp@9.4.1`. These are **install/build-time native-compile tooling, not
+  runtime**; no patch exists until duckdb ships a newer node-gyp, and forcing one
+  risks breaking the native build for ~zero real-world gain. Revisit on a duckdb
+  upgrade. `gaxios` (moderate) was the one borderline case — its patch is in
+  gaxios 7, which `googleapis` doesn't support, so it's left to avoid risking the
+  primary Gmail client.
+
 ## Backlog (not in the lean pass)
 
-- **L5 security** — add a secret/dep scan (gitleaks / osv-scanner / semgrep);
-  warranted because OAuth tokens are handled.
+- **L5 security** — add a secret/dep scan in CI (gitleaks / osv-scanner /
+  semgrep); warranted because OAuth tokens are handled.
 - **L3 mutation** — Stryker over the high-value core (rules engine, retry,
   token-crypto, daily-digest).
 - **Lint debt** — tighten `no-case-declarations` / `no-var-requires` from

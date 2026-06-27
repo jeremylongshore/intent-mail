@@ -71,11 +71,11 @@
     "ink-select-input": "^6.0.0",
     "ink-spinner": "^5.0.0",
     "ink-text-input": "^6.0.0",
+    "js-yaml": "^4.3.0",
     "keytar": "^7.9.0",
     "mailparser": "^3.9.1",
     "marked": "^17.0.1",
-    "md-to-pdf": "^5.2.5",
-    "nodemailer": "^7.0.12",
+    "nodemailer": "^9.0.1",
     "openai": "^4.77.0",
     "puppeteer": "^24.34.0",
     "reacord": "^0.6.0",
@@ -108,7 +108,9 @@
     "node": ">=20.0.0"
   },
   "overrides": {
-    "qs": ">=6.14.1",
-    "js-yaml": ">=4.1.1"
+    "minimatch": "^9.0.9",
+    "semver": "^7.7.2",
+    "undici": "^6.27.0",
+    "uuid": "^11.1.1"
   }
 }
