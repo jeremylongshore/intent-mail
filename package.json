@@ -74,7 +74,7 @@
     "js-yaml": "^4.3.0",
     "keytar": "^7.9.0",
     "mailparser": "^3.9.1",
-    "marked": "^17.0.1",
+    "marked": "^18.0.5",
     "nodemailer": "^9.0.1",
     "openai": "^4.77.0",
     "puppeteer": "^24.34.0",
