@@ -20,7 +20,7 @@ jobs:
           name: docs-suite
           path: artifacts.zip
       - name: Create GitHub Release with asset
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: artifacts.zip
           generate_release_notes: true
