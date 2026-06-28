@@ -59,7 +59,7 @@
     "@inquirer/prompts": "^7.2.1",
     "@modelcontextprotocol/sdk": "^1.25.2",
     "better-sqlite3": "^9.2.2",
-    "commander": "^12.1.0",
+    "commander": "^15.0.0",
     "conf": "^13.0.1",
     "discord.js": "^14.25.1",
     "dotenv": "^16.3.1",
