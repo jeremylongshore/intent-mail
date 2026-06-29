@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           # GITLEAKS_LICENSE is only required for organization accounts, not
           # public repos. Left unset intentionally.
@@ -43,7 +43,7 @@ jobs:
       # build-chain advisories are resolved upstream to make OSV blocking.
       - name: Run OSV scanner
         continue-on-error: true
-        uses: google/osv-scanner-action/osv-scanner-action@v2.2.4
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
         with:
           scan-args: |-
             --lockfile=package-lock.json
