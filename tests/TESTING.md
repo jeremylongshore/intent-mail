@@ -77,12 +77,47 @@ floor, this policy file, CI made blocking.
   gaxios 7, which `googleapis` doesn't support, so it's left to avoid risking the
   primary Gmail client.
 
+## L3 mutation testing (Stryker) — baseline 2026-06-28
+
+Stryker (`@stryker-mutator/core` + `@stryker-mutator/vitest-runner`) is wired up
+over the high-value pure-logic core. Run with `npm run test:mutation`
+(`stryker run`). Config: `stryker.config.json` — `testRunner: vitest`,
+`coverageAnalysis: perTest`, `mutate` scoped to four files so the run is fast
+(~30 s) and meaningful:
+
+- `src/rules/engine.ts`
+- `src/connectors/shared/retry.ts`
+- `src/storage/token-crypto.ts`
+- `src/ai/daily-digest.ts`
+
+**Report-only for now.** Thresholds are `{ high: 80, low: 60, break: null }` —
+`break: null` means Stryker reports the score but **never fails CI**. This lets
+us establish a baseline and improve incrementally before making it a blocking
+gate. HTML report: `reports/mutation/mutation.html` (gitignored).
+
+**Baseline (2026-06-28):** overall mutation score **24.88%** (58.74% over
+covered mutants; 157 killed / 1 timeout / 111 survived / 366 no-coverage).
+Per file:
+
+| File | Mutation score | Killed | Survived | No-cov |
+|---|---|---|---|---|
+| `connectors/shared/retry.ts` | 76.27% | 44 | 9 | 5 |
+| `storage/token-crypto.ts` | 52.53% | 52 | 17 | 30 |
+| `ai/daily-digest.ts` | 34.66% | 61 | 85 | 30 |
+| `rules/engine.ts` | 0.00% | 0 | 0 | 301 |
+
+`rules/engine.ts` drags the total down — it has no co-located unit test, so
+all 301 mutants are no-coverage. Highest-leverage next step: add
+`src/rules/engine.test.ts`, then flip `break` from `null` to a real floor once
+each file clears `low: 60`.
+
 ## Backlog (not in the lean pass)
 
 - **L5 security** — add a secret/dep scan in CI (gitleaks / osv-scanner /
   semgrep); warranted because OAuth tokens are handled.
-- **L3 mutation** — Stryker over the high-value core (rules engine, retry,
-  token-crypto, daily-digest).
+- **L3 mutation — promote to a gate** — add `src/rules/engine.test.ts` to lift
+  it off 0%, then set `break` to a real floor (start ~25%, ratchet up) so
+  mutation score becomes a blocking check.
 - **Lint debt** — tighten `no-case-declarations` / `no-var-requires` from
   warning to error after cleaning `query-to-sql.ts` and `stores/index.ts`.
 
