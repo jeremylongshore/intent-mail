@@ -43,10 +43,10 @@ module.exports = {
     // TS empty functions / ts-comments occasionally appear — warn.
     '@typescript-eslint/no-empty-function': 'warn',
     '@typescript-eslint/ban-ts-comment': 'warn',
-    // Pre-existing legacy patterns in a few modules — surfaced as warnings on
-    // first lint introduction, to tighten to errors in a later cleanup pass.
-    'no-case-declarations': 'warn',
-    '@typescript-eslint/no-var-requires': 'warn',
+    // Legacy patterns paid down 2026-06: case-declaration bodies wrapped in
+    // blocks, lazy `require()`s converted to static ESM imports. Now errors.
+    'no-case-declarations': 'error',
+    '@typescript-eslint/no-var-requires': 'error',
     // Allow deliberate `while (true)` paging loops (they break internally);
     // still catch constant conditions in if-statements.
     'no-constant-condition': ['error', { checkLoops: false }],

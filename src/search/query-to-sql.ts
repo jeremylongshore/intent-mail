@@ -155,7 +155,7 @@ function buildFieldCondition(
         SELECT a.email_id FROM attachments a WHERE a.filename LIKE ?
       )`;
 
-    case 'in':
+    case 'in': {
       const labelValue = IN_FOLDER_MAP[value.toLowerCase()] || value.toUpperCase();
       if (labelValue === '') {
         // 'in:anywhere' matches all
@@ -163,6 +163,7 @@ function buildFieldCondition(
       }
       ctx.params.push(`%${labelValue}%`);
       return `e.labels ${op} ?`;
+    }
 
     default:
       return '1=1';
@@ -182,7 +183,7 @@ function buildHasCondition(condition: HasCondition, ctx: BuildContext): string {
     case 'drive':
     case 'document':
     case 'spreadsheet':
-    case 'presentation':
+    case 'presentation': {
       // These map to specific attachment types or body content
       const mimeTypes: Record<string, string[]> = {
         drive: ['application/vnd.google-apps.'],
@@ -199,6 +200,7 @@ function buildHasCondition(condition: HasCondition, ctx: BuildContext): string {
       return `e.id ${negated ? 'NOT ' : ''}IN (
         SELECT a.email_id FROM attachments a WHERE ${typeConditions}
       )`;
+    }
 
     case 'youtube':
       ctx.params.push('%youtube.com%', '%youtu.be%');
