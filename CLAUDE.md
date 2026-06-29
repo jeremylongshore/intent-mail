@@ -160,19 +160,16 @@ Restart Claude Desktop, then: `Use the health_check tool`
 
 ## Infrastructure
 
-**GCP Project**: `mail-with-intent`
-
-**Terraform** (`infra/`):
-```bash
-cd infra && terraform init
-terraform plan           # Review
-terraform apply          # Deploy
-```
+**Self-hosted — there is no cloud deploy pipeline.** Run the MCP server locally
+(`npm run build && intentmail serve`) or in Docker; you hold the OAuth token and
+the mailbox never leaves your machine. (The former GCP Cloud Run / Terraform
+deploy machinery was removed once the project moved off GCP.)
 
 **CI/CD** (`.github/workflows/`):
-- `ci.yml` - Lint, typecheck, test on PRs
-- `deploy.yml` - Cloud Run deployment (WIF, keyless)
-- `drift.yml` - Daily Terraform drift detection
+- `ci.yml` - lint, typecheck, test:cov, build on PRs (blocking)
+- `security.yml` - gitleaks secret scan + osv-scanner dependency scan
+- `release.yml` - release automation
+- `renovate.yml` - dependency updates
 
 ## Task Tracking (Beads)
 
