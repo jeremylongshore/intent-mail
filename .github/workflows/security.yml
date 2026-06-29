@@ -31,17 +31,18 @@ jobs:
   dependency-scan:
     name: Dependency scan (OSV)
     runs-on: ubuntu-latest
-    # NON-BLOCKING: OSV currently surfaces 5 fix=NONE advisories in the
-    # duckdb / node-gyp native build chain. That residual is documented and
-    # accepted in tests/TESTING.md (§ "Dependency posture / lean pass").
-    # continue-on-error keeps the job informational until those upstreams ship
-    # fixes; remove it once the build-chain advisories are resolved.
-    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      # REPORT-ONLY: OSV currently surfaces 5 fix=NONE advisories in the
+      # duckdb / node-gyp native build chain — documented and accepted in
+      # tests/TESTING.md. `continue-on-error` is on the STEP (not the job) so a
+      # non-zero OSV exit doesn't mark the check red; the job still concludes
+      # green while the scan output stays visible. Remove this once the
+      # build-chain advisories are resolved upstream to make OSV blocking.
       - name: Run OSV scanner
+        continue-on-error: true
         uses: google/osv-scanner-action/osv-scanner-action@v2.2.4
         with:
           scan-args: |-
