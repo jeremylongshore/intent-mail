@@ -76,3 +76,6 @@ archive/
 
 # Dolt database files (added by bd init)
 .dolt/
+
+# Claude Code workflow worktrees (ultracode/Workflow isolation — local-only)
+.claude/worktrees/
