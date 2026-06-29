@@ -1,0 +1,48 @@
+name: Security
+
+# L5 security-scan layer (tests/TESTING.md "Backlog → L5 security").
+# Two independent jobs: gitleaks secret scan + OSV dependency scan.
+# Warranted because this repo handles OAuth tokens.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          # Full history so gitleaks can scan every commit on the branch/PR.
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          # GITLEAKS_LICENSE is only required for organization accounts, not
+          # public repos. Left unset intentionally.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-scan:
+    name: Dependency scan (OSV)
+    runs-on: ubuntu-latest
+    # NON-BLOCKING: OSV currently surfaces 5 fix=NONE advisories in the
+    # duckdb / node-gyp native build chain. That residual is documented and
+    # accepted in tests/TESTING.md (§ "Dependency posture / lean pass").
+    # continue-on-error keeps the job informational until those upstreams ship
+    # fixes; remove it once the build-chain advisories are resolved.
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Run OSV scanner
+        uses: google/osv-scanner-action/osv-scanner-action@v2.2.4
+        with:
+          scan-args: |-
+            --lockfile=package-lock.json
