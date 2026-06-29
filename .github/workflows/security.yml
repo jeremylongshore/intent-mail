@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           # GITLEAKS_LICENSE is only required for organization accounts, not
           # public repos. Left unset intentionally.
