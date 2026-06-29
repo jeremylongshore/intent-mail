@@ -79,7 +79,7 @@
     "puppeteer": "^24.34.0",
     "reacord": "^0.6.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react-dom": "^19.2.7",
     "resend": "^6.7.0",
     "zod": "^3.22.4",
     "zustand": "^5.0.9"
