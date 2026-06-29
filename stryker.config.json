@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "L3 mutation testing (tests/TESTING.md backlog). Scoped to the high-value pure-logic core so a baseline run is fast and meaningful. break:null = report-only for now (does NOT fail CI). See tests/TESTING.md § Backlog.",
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "reporters": ["html", "clear-text", "progress"],
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "src/rules/engine.ts",
+    "src/connectors/shared/retry.ts",
+    "src/storage/token-crypto.ts",
+    "src/ai/daily-digest.ts"
+  ],
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": null
+  }
+}

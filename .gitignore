@@ -51,6 +51,10 @@ logs/
 coverage/
 .nyc_output/
 
+# Mutation testing (Stryker) artifacts
+reports/mutation/
+.stryker-tmp/
+
 # Python (if projects use Python)
 __pycache__/
 *.py[cod]
