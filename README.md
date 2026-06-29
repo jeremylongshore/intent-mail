@@ -344,14 +344,14 @@ See [Docker Guide](000-docs/003-OD-DEPL-docker-deployment.md) for:
 - Custom client connections
 - Security best practices
 
-### Cloud Deployment
+### Deployment
 
-- **Local/Docker:** ✅ Recommended (see [Docker Guide](000-docs/003-OD-DEPL-docker-deployment.md))
-- **Google Cloud Run:** ❌ Not recommended (MCP requires stdio, not HTTP)
-- **Compute Engine:** ✅ Works (VM with Docker)
-- **Kubernetes:** ✅ Works (GKE, K8s)
+This is a **self-hosted, stdio MCP** — you run it yourself; there is no cloud
+deploy pipeline.
 
-See [Setup Guide](000-docs/033-DR-GUID-setup.md) for infrastructure details (Terraform, WIF).
+- **Local:** `npm ci && npm run build`, then `intentmail serve` (or wire it into
+  your Claude Code / Claude Desktop config — see "Use as a Claude Code plugin").
+- **Docker:** see the [Docker Guide](000-docs/003-OD-DEPL-docker-deployment.md).
 
 ---
 
@@ -436,8 +436,7 @@ intent-mail/
 │   ├── rules/                # Rules engine + parser
 │   ├── storage/              # SQLite + migrations
 │   └── types/                # TypeScript interfaces
-├── infra/                    # Terraform (GCP deployment)
-├── .github/workflows/        # CI/CD pipelines
+├── .github/workflows/        # CI (lint/test/build), security, release
 ├── test-oauth-auto.js        # OAuth testing scripts
 └── data/                     # SQLite database (gitignored)
 ```
