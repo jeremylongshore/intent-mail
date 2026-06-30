@@ -1,7 +1,7 @@
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import Spinner from 'ink-spinner';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type ReactElement } from 'react';
 import type { Email, EmailConnector, EmailSearchResult } from '../../agents/email-connector.js';
 
 interface SearchViewProps {
@@ -20,7 +20,7 @@ function getSenderName(email: Email): string {
   return email.from.name || email.from.email.split('@')[0];
 }
 
-export function SearchView({ initialQuery, connector, onSelectEmail, onBack }: SearchViewProps): JSX.Element {
+export function SearchView({ initialQuery, connector, onSelectEmail, onBack }: SearchViewProps): ReactElement {
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<EmailSearchResult[]>([]);
   const [loading, setLoading] = useState(false);

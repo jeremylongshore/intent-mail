@@ -1,7 +1,7 @@
 import { Box, Text, useApp, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import Spinner from 'ink-spinner';
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import type { Email, EmailConnector, EmailDraft } from '../../agents/email-connector.js';
 import { generateDraft, suggestReply, type DraftTone } from '../../ai/index.js';
 
@@ -14,7 +14,7 @@ interface ComposeViewProps {
 
 type ComposeField = 'to' | 'subject' | 'body';
 
-export function ComposeView({ useAI, replyTo, connector, onBack }: ComposeViewProps): JSX.Element {
+export function ComposeView({ useAI, replyTo, connector, onBack }: ComposeViewProps): ReactElement {
   const { exit } = useApp();
 
   // Pre-fill for replies
