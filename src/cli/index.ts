@@ -65,7 +65,8 @@ program
   .command('serve')
   .description('Run as MCP server (for Claude Desktop integration)')
   .action(async () => {
-    await import('../index.js');
+    const { runServer } = await import('../index.js');
+    runServer();
   });
 
 program

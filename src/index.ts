@@ -7,6 +7,8 @@
  * Features: search, thread operations, labels, rules-as-code automation.
  */
 
+import { fileURLToPath } from 'url';
+import { realpathSync } from 'fs';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -64,7 +66,7 @@ import { runMigrations } from './storage/migrations.js';
 import { initSyncMetricsTable } from './storage/services/sync-metrics.js';
 import { initAttachmentCache } from './storage/services/attachment-cache.js';
 
-async function main() {
+export async function startServer(): Promise<void> {
   // Initialize database and run migrations
   console.error('Initializing database...');
   await initDatabase();
@@ -162,22 +164,52 @@ async function main() {
   console.error('Listening on stdio...');
 }
 
-// Graceful shutdown handler
-process.on('SIGINT', () => {
-  console.error('Shutting down gracefully...');
-  closeDatabase();
-  process.exit(0);
-});
+/**
+ * Bootstrap the MCP server: register signal handlers and start on stdio.
+ *
+ * Kept separate from {@link startServer} so the side effects (process signal
+ * handlers, stdio transport) only happen when the server is actually run as an
+ * entry point — never as a side effect of importing this module.
+ */
+export function runServer(): void {
+  // Graceful shutdown handler
+  process.on('SIGINT', () => {
+    console.error('Shutting down gracefully...');
+    closeDatabase();
+    process.exit(0);
+  });
 
-process.on('SIGTERM', () => {
-  console.error('Shutting down gracefully...');
-  closeDatabase();
-  process.exit(0);
-});
+  process.on('SIGTERM', () => {
+    console.error('Shutting down gracefully...');
+    closeDatabase();
+    process.exit(0);
+  });
 
-// Run server
-main().catch((error) => {
-  console.error('Server error:', error);
-  closeDatabase();
-  process.exit(1);
-});
+  // Run server
+  startServer().catch((error) => {
+    console.error('Server error:', error);
+    closeDatabase();
+    process.exit(1);
+  });
+}
+
+/**
+ * Run automatically only when this module is the process entry point
+ * (e.g. `node dist/index.js`). Importing the package must NOT start the
+ * server or touch the database — that is a library/CLI anti-pattern.
+ */
+function isEntryModule(): boolean {
+  const entry = process.argv[1];
+  if (!entry) {
+    return false;
+  }
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(entry);
+  } catch {
+    return false;
+  }
+}
+
+if (isEntryModule()) {
+  runServer();
+}
