@@ -59,23 +59,37 @@ strict (NodeNext).
 `TEST_AUDIT.md`. Lean remediation applied: ESLint config, coverage provider +
 floor, this policy file, CI made blocking.
 
-## Dependency audit (2026-06-26)
+## Dependency audit (2026-06-30)
 
-`npm audit` triaged from **22 → 5**:
+`npm audit` is at **0 critical / 0 high / 0 moderate / 0 low (0 total)**.
+
+History — triaged from **22 → 5** (2026-06-26), then **5 → 0** (2026-06-30):
 - Cleared via `overrides` (no breaking direct-dep bumps): `minimatch ^9.0.9`
   (clears the whole `@typescript-eslint/*` ReDoS cluster without the v8/ESLint-9
   migration), `semver ^7.7.2`, `undici ^6.27.0`, `uuid ^11.1.1`.
 - Direct bump: `nodemailer` 7 → 9. Removed unused dep `md-to-pdf` (cleared
   gray-matter / js-yaml / md-to-pdf). Declared `js-yaml` as a direct dep (it was
   imported in `rules/parser.ts` but only resolved via hoisting).
-- **5 accepted residual (`fix=NONE`)**: `tar` / `cacache` / `make-fetch-happen`
-  / `node-gyp` / `duckdb` — a single chain off `duckdb@1.4.4`'s bundled
-  `node-gyp@9.4.1`. These are **install/build-time native-compile tooling, not
-  runtime**; no patch exists until duckdb ships a newer node-gyp, and forcing one
-  risks breaking the native build for ~zero real-world gain. Revisit on a duckdb
-  upgrade. `gaxios` (moderate) was the one borderline case — its patch is in
-  gaxios 7, which `googleapis` doesn't support, so it's left to avoid risking the
-  primary Gmail client.
+- **2026-06-30 — the 5 prior "fix=NONE" residuals are now cleared.** The chain
+  `tar` / `cacache` / `make-fetch-happen` / `node-gyp` hangs off `duckdb@1.4.4`'s
+  bundled `node-gyp@9.4.1` (install/build-time native-compile tooling, not
+  runtime). The `node-tar` advisories are range `<=7.5.15`; patched `tar@7.5.16+`
+  now exists, so the chain is forced to patched versions via `overrides`:
+  `node-gyp ^11.5.0`, `tar ^7.5.16` (resolves 7.5.19), `cacache ^20.0.4`,
+  `make-fetch-happen ^15.0.6`. `cacache@20` / `make-fetch-happen@15` are pinned
+  (not 21/16) so their `engines` stay `^20.17.0 || >=22.9.0` — compatible with
+  the package's `engines.node >=20` and the dev box's Node 22.21.0 (no
+  EBADENGINE). duckdb's native build uses `@mapbox/node-pre-gyp` prebuilds;
+  node-gyp is only the compile fallback, so the bump is safe.
+- Also bumped to clear the latest scan: direct devDep `esbuild` 0.27 → ^0.28.1
+  (Windows dev-server arbitrary-file-read; esbuild is not imported in `src/`,
+  vite keeps its own `esbuild@0.25.x`), and `overrides` `qs ^6.15.3` (DoS in
+  `qs.stringify`; pulled transitively via express/typed-rest-client/googleapis).
+- The scouted Dependabot critical/high set (vitest, vite, rollup, flatted,
+  minimatch, @modelcontextprotocol/sdk) was **already satisfied** by the
+  installed tree + the existing minimatch override; vitest is 4.x (alert range
+  `<3.2.6`), mcp-sdk 1.29.0, vite 6.4.3, rollup 4.62.2, flatted 3.4.2 — those
+  Dependabot alerts just need a lockfile refresh, not a bump.
 
 ## L3 mutation testing (Stryker) — baseline 2026-06-28
 
