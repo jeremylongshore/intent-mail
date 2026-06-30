@@ -1,5 +1,5 @@
 import { Box, Text, useApp, useInput } from 'ink';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactElement } from 'react';
 import Spinner from 'ink-spinner';
 import { InboxView } from './InboxView.js';
 import { EmailDetailView } from './EmailDetailView.js';
@@ -25,7 +25,7 @@ export interface AppProps {
   connector?: EmailConnector;
 }
 
-export function App({ connector: injectedConnector }: AppProps): JSX.Element {
+export function App({ connector: injectedConnector }: AppProps): ReactElement {
   const { exit } = useApp();
   const [state, setState] = useState<AppState>({
     view: 'inbox',

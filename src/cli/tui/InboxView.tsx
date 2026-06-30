@@ -1,6 +1,6 @@
 import { Box, Text, useInput } from 'ink';
 import Spinner from 'ink-spinner';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactElement } from 'react';
 import type { Email, EmailConnector } from '../../agents/email-connector.js';
 
 interface InboxViewProps {
@@ -42,7 +42,7 @@ function getSenderName(email: Email): string {
   return email.from.name || email.from.email.split('@')[0];
 }
 
-export function InboxView({ connector, onSelectEmail, onCompose, onSearch }: InboxViewProps): JSX.Element {
+export function InboxView({ connector, onSelectEmail, onCompose, onSearch }: InboxViewProps): ReactElement {
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

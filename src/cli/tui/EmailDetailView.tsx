@@ -1,5 +1,5 @@
 import { Box, Text, useInput } from 'ink';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactElement } from 'react';
 import Spinner from 'ink-spinner';
 import type { Email, EmailConnector } from '../../agents/email-connector.js';
 
@@ -56,7 +56,7 @@ function wrapText(text: string, width: number): string[] {
   return lines;
 }
 
-export function EmailDetailView({ email, connector, onBack, onReply }: EmailDetailViewProps): JSX.Element {
+export function EmailDetailView({ email, connector, onBack, onReply }: EmailDetailViewProps): ReactElement {
   const [scrollOffset, setScrollOffset] = useState(0);
   const [marking, setMarking] = useState(false);
 
