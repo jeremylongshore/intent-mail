@@ -53,7 +53,6 @@
   },
   "homepage": "https://github.com/intent-solutions-io/intent-mail#readme",
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.1.76",
     "@anthropic-ai/sdk": "^0.106.0",
     "@google-cloud/vertexai": "^1.9.0",
     "@inquirer/prompts": "^8.5.2",
