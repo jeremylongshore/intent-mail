@@ -4,6 +4,13 @@
   "description": "AI-powered email CLI with TUI - supports Vertex AI, OpenAI, Anthropic, Ollama",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "bin": {
     "intentmail": "./bin/intentmail.js"
   },
@@ -26,11 +33,12 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:mutation": "stryker run",
-    "prepare": "husky"
+    "prepare": "husky",
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/intent-solutions-io/intent-mail.git"
+    "url": "git+https://github.com/jeremylongshore/intent-mail.git"
   },
   "keywords": [
     "email",
@@ -48,10 +56,13 @@
   ],
   "author": "Jeremy Longshore <jeremy@intentsolutions.io>",
   "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/intent-solutions-io/intent-mail/issues"
+  "publishConfig": {
+    "access": "public"
   },
-  "homepage": "https://github.com/intent-solutions-io/intent-mail#readme",
+  "bugs": {
+    "url": "https://github.com/jeremylongshore/intent-mail/issues"
+  },
+  "homepage": "https://github.com/jeremylongshore/intent-mail#readme",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",
     "@google-cloud/vertexai": "^1.9.0",

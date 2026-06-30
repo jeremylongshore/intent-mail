@@ -4,23 +4,36 @@ on:
     tags: ['v*.*.*']
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  publish-npm:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # required for npm provenance (Sigstore OIDC)
     steps:
       - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
-      - name: Build suite for release
-        run: make release-check
-      - name: Upload release artifact
-        uses: actions/upload-artifact@v7
+      - uses: actions/setup-node@v4
         with:
-          name: docs-suite
-          path: artifacts.zip
-      - name: Create GitHub Release with asset
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm ci
+      - run: npm run build   # tsc -> dist/ (files allowlist = [dist, bin])
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  github-release:
+    runs-on: ubuntu-latest
+    needs: publish-npm   # only cut the Release once npm publish succeeds
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: artifacts.zip
           generate_release_notes: true
