@@ -10,10 +10,11 @@
 import { getDatabase } from '../storage/database.js';
 import { createLogger } from '../utils/logger.js';
 import { AccountRow, EmailProvider } from '../types/account.js';
-import { createGmailOAuth, createGmailClient, createGmailSync } from '../connectors/gmail/index.js';
+import { createGmailSync } from '../connectors/gmail/index.js';
 import { getProviderClientForAccount } from '../connectors/provider-client.js';
 import { createOutlookSync } from '../connectors/outlook/sync.js';
-import { decryptToken } from '../storage/token-crypto.js';
+import { updateSyncState } from '../storage/services/account-storage.js';
+import { mapWithConcurrency, prioritizeAccounts } from './sync-orchestrator.js';
 import {
   startWatch,
   getAccountsWithExpiringWatches,
@@ -54,6 +55,9 @@ const DEFAULT_CONFIG: DaemonConfig = {
 let isRunning = false;
 let renewalTimer: NodeJS.Timeout | null = null;
 let pollingTimer: NodeJS.Timeout | null = null;
+// Reentrancy guard: a poll cycle over many accounts can outlast the interval;
+// without this, setInterval would stack overlapping cycles and double-sync.
+let isPolling = false;
 
 /**
  * Process a push notification from Gmail
@@ -80,22 +84,14 @@ export async function processPushNotification(
   const logId = logPushNotification(account.id, historyId, messageData);
 
   try {
-    // Create Gmail client
-    const oauth = createGmailOAuth({
-      clientId: process.env.GMAIL_CLIENT_ID || '',
-      clientSecret: process.env.GMAIL_CLIENT_SECRET || '',
-      redirectUri: process.env.GMAIL_REDIRECT_URI || 'http://localhost:3000/oauth/callback',
-      scopes: [],
-    });
-
-    oauth.setCredentials({
-      accessToken: decryptToken(account.access_token!),
-      refreshToken: decryptToken(account.refresh_token!),
-      expiresAt: account.token_expires_at || '',
-    });
-
-    const gmailClient = createGmailClient(oauth);
-    const sync = createGmailSync(gmailClient, account.id);
+    // Factory loads the account, refreshes an expired token AND persists it,
+    // and returns a ready Gmail client (fixes the token-drift the old manual
+    // OAuth dance had: it never wrote refreshed tokens back).
+    const client = await getProviderClientForAccount(account.id);
+    if (!client.gmail) {
+      throw new Error(`Account ${accountEmail} is not a Gmail account`);
+    }
+    const sync = createGmailSync(client.gmail, account.id);
 
     // Perform delta sync from the notification's history ID
     // Use the stored lastHistoryId if it's newer than the notification
@@ -103,13 +99,10 @@ export async function processPushNotification(
     const result = await sync.deltaSync(startHistoryId);
 
     // Update sync state
-    db.prepare(`
-      UPDATE accounts
-      SET last_history_id = ?,
-          last_sync_at = ?,
-          updated_at = datetime('now')
-      WHERE id = ?
-    `).run(result.newHistoryId, result.syncedAt, account.id);
+    updateSyncState({
+      accountId: account.id,
+      syncState: { lastHistoryId: result.newHistoryId, lastSyncAt: result.syncedAt },
+    });
 
     // Mark notification as processed
     markPushNotificationProcessed(logId, true);
@@ -160,34 +153,16 @@ export async function renewExpiringWatches(pubsubTopic: string): Promise<{
 
   for (const account of expiringAccounts) {
     try {
-      const db = getDatabase();
-      const fullAccount = db.prepare('SELECT * FROM accounts WHERE id = ?')
-        .get(account.id) as AccountRow;
-
-      if (!fullAccount.access_token || !fullAccount.refresh_token) {
-        errors.push(`${account.email}: No tokens available`);
+      // Factory refreshes + persists tokens before we renew the watch.
+      const client = await getProviderClientForAccount(account.id);
+      if (!client.gmail) {
+        errors.push(`${account.email}: not a Gmail account`);
         failed++;
         continue;
       }
 
-      // Create Gmail client
-      const oauth = createGmailOAuth({
-        clientId: process.env.GMAIL_CLIENT_ID || '',
-        clientSecret: process.env.GMAIL_CLIENT_SECRET || '',
-        redirectUri: process.env.GMAIL_REDIRECT_URI || 'http://localhost:3000/oauth/callback',
-        scopes: [],
-      });
-
-      oauth.setCredentials({
-        accessToken: decryptToken(fullAccount.access_token),
-        refreshToken: decryptToken(fullAccount.refresh_token),
-        expiresAt: fullAccount.token_expires_at || '',
-      });
-
-      const gmailClient = createGmailClient(oauth);
-
       // Renew watch
-      await startWatch(account.id, pubsubTopic, gmailClient);
+      await startWatch(account.id, pubsubTopic, client.gmail);
 
       log.info('Watch renewed', { email: account.email });
       renewed++;
@@ -219,67 +194,61 @@ export async function pollNonPushAccounts(): Promise<{
     getAccountsWithPushEnabled().map((a) => a.id)
   );
 
-  // Get active Gmail accounts without push
+  // Active Gmail accounts without push that are authenticated and have a
+  // baseline history ID (a never-synced account needs an initial mail_sync
+  // first — there's nothing to delta against yet).
   const accounts = (db.prepare(`
     SELECT * FROM accounts
     WHERE is_active = 1 AND provider = ?
   `).all(EmailProvider.GMAIL) as AccountRow[])
-    .filter((a) => !pushEnabledIds.has(a.id));
+    .filter(
+      (a) =>
+        !pushEnabledIds.has(a.id) &&
+        a.access_token &&
+        a.refresh_token &&
+        a.last_history_id
+    );
 
-  log.info('Polling accounts without push', { count: accounts.length });
+  // Most recently active mailboxes first, so they refresh before idle ones
+  // when a cycle can't finish every account within the interval.
+  const prioritized = prioritizeAccounts(accounts);
+
+  log.info('Polling Gmail accounts without push', { count: prioritized.length });
 
   let polled = 0;
   let emailsSynced = 0;
   const errors: string[] = [];
 
-  for (const account of accounts) {
-    if (!account.access_token || !account.refresh_token) {
-      continue;
-    }
+  // Bounded concurrency so a large account set doesn't fan out unbounded API
+  // calls; per-request 429/5xx backoff lives in the Gmail client itself.
+  const results = await mapWithConcurrency(prioritized, async (account) => {
+    // Factory refreshes + persists tokens (fixes the prior token drift).
+    const client = await getProviderClientForAccount(account.id);
+    if (!client.gmail) return 0;
 
-    try {
-      const oauth = createGmailOAuth({
-        clientId: process.env.GMAIL_CLIENT_ID || '',
-        clientSecret: process.env.GMAIL_CLIENT_SECRET || '',
-        redirectUri: process.env.GMAIL_REDIRECT_URI || 'http://localhost:3000/oauth/callback',
-        scopes: [],
-      });
+    const sync = createGmailSync(client.gmail, account.id);
+    const result = await sync.deltaSync(account.last_history_id!);
 
-      oauth.setCredentials({
-        accessToken: decryptToken(account.access_token),
-        refreshToken: decryptToken(account.refresh_token),
-        expiresAt: account.token_expires_at || '',
-      });
+    updateSyncState({
+      accountId: account.id,
+      syncState: { lastHistoryId: result.newHistoryId, lastSyncAt: result.syncedAt },
+    });
 
-      const gmailClient = createGmailClient(oauth);
-      const sync = createGmailSync(gmailClient, account.id);
+    return result.messagesAdded + result.labelsChanged;
+  });
 
-      // Delta sync if we have history ID, otherwise skip (requires initial sync first)
-      if (account.last_history_id) {
-        const result = await sync.deltaSync(account.last_history_id);
-
-        db.prepare(`
-          UPDATE accounts
-          SET last_history_id = ?,
-              last_sync_at = ?,
-              updated_at = datetime('now')
-          WHERE id = ?
-        `).run(result.newHistoryId, result.syncedAt, account.id);
-
-        emailsSynced += result.messagesAdded + result.labelsChanged;
-      }
-
+  results.forEach((r, i) => {
+    if (r.ok) {
       polled++;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      errors.push(`${account.email}: ${errorMessage}`);
-
+      emailsSynced += r.value;
+    } else {
+      errors.push(`${prioritized[i].email}: ${r.error.message}`);
       log.error('Polling failed', {
-        email: account.email,
-        error: errorMessage,
+        email: prioritized[i].email,
+        error: r.error.message,
       });
     }
-  }
+  });
 
   return { polled, emailsSynced, errors };
 }
@@ -301,50 +270,48 @@ export async function pollOutlookAccounts(): Promise<{
 }> {
   const db = getDatabase();
 
-  const accounts = db
-    .prepare(
-      `SELECT * FROM accounts WHERE is_active = 1 AND provider = ?`
-    )
-    .all(EmailProvider.OUTLOOK) as AccountRow[];
+  // Active Outlook accounts that already have a deltaToken (without one there is
+  // nothing to delta against — a fresh account needs an initial mail_sync).
+  const accounts = (db
+    .prepare(`SELECT * FROM accounts WHERE is_active = 1 AND provider = ?`)
+    .all(EmailProvider.OUTLOOK) as AccountRow[]).filter((a) => a.delta_token);
 
-  log.info('Polling Outlook accounts (delta)', { count: accounts.length });
+  const prioritized = prioritizeAccounts(accounts);
+
+  log.info('Polling Outlook accounts (delta)', { count: prioritized.length });
 
   let polled = 0;
   let emailsSynced = 0;
   const errors: string[] = [];
 
-  for (const account of accounts) {
-    // Without a deltaToken there is nothing to delta against yet.
-    if (!account.delta_token) {
-      continue;
-    }
+  const results = await mapWithConcurrency(prioritized, async (account) => {
+    // Factory handles token refresh + persistence (incl. on-401).
+    const client = await getProviderClientForAccount(account.id);
+    if (!client.outlook) return 0;
 
-    try {
-      // Factory handles token refresh + persistence (incl. on-401).
-      const client = await getProviderClientForAccount(account.id);
-      if (!client.outlook) {
-        continue;
-      }
+    const sync = createOutlookSync(client.outlook, account.id);
+    const result = await sync.deltaSync(account.delta_token!);
 
-      const sync = createOutlookSync(client.outlook, account.id);
-      const result = await sync.deltaSync(account.delta_token);
+    updateSyncState({
+      accountId: account.id,
+      syncState: { deltaToken: result.deltaLink, lastSyncAt: result.syncedAt },
+    });
 
-      db.prepare(
-        `UPDATE accounts
-           SET delta_token = ?,
-               last_sync_at = ?,
-               updated_at = datetime('now')
-         WHERE id = ?`
-      ).run(result.deltaLink, result.syncedAt, account.id);
+    return result.messagesAdded + result.labelsChanged;
+  });
 
-      emailsSynced += result.messagesAdded + result.labelsChanged;
+  results.forEach((r, i) => {
+    if (r.ok) {
       polled++;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      errors.push(`${account.email}: ${errorMessage}`);
-      log.error('Outlook poll failed', { email: account.email, error: errorMessage });
+      emailsSynced += r.value;
+    } else {
+      errors.push(`${prioritized[i].email}: ${r.error.message}`);
+      log.error('Outlook poll failed', {
+        email: prioritized[i].email,
+        error: r.error.message,
+      });
     }
-  }
+  });
 
   return { polled, emailsSynced, errors };
 }
@@ -389,7 +356,14 @@ export function startDaemon(config: Partial<DaemonConfig> = {}): void {
   }
 
   // Polling timer for non-push accounts (Gmail without push + all Outlook).
+  // Guarded against reentrancy: if a cycle is still running when the interval
+  // fires, skip this tick rather than stacking overlapping syncs.
   pollingTimer = setInterval(async () => {
+    if (isPolling) {
+      log.warn('Skipping poll cycle — previous cycle still running');
+      return;
+    }
+    isPolling = true;
     try {
       await pollNonPushAccounts();
     } catch (error) {
@@ -403,6 +377,8 @@ export function startDaemon(config: Partial<DaemonConfig> = {}): void {
       log.error('Outlook polling check failed', {
         error: error instanceof Error ? error.message : String(error),
       });
+    } finally {
+      isPolling = false;
     }
   }, finalConfig.pollingInterval);
 
