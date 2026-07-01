@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-30
+
+### Fixed
+- Importing the package (loading `dist/index.js`) no longer creates a
+  `./data/intentmail.db` in the consumer's current directory — the server
+  bootstrap is now guarded behind an entry-point check. Running `intentmail
+  serve` still initializes the database as before.
+- Cleared all critical/high npm/Dependabot advisories (`npm audit` 5 → 0) via
+  targeted `overrides` (node-gyp, tar, cacache, make-fetch-happen, qs) and an
+  `esbuild` devDependency bump. Runtime dependencies untouched.
+
+### Changed
+- Hardened the npm publish path for the scoped public package:
+  `publishConfig.access=public`, a `types` field + `exports` map, a
+  `prepublishOnly` build guard, corrected `repository`/`bugs`/`homepage` URLs,
+  and a `release.yml` that auto-publishes to npm with Sigstore provenance on tag
+  push.
+
 ## [0.5.0] - 2026-06-30
 
 ### Added
@@ -64,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (See the git history for the full per-PR detail.)
 
-[Unreleased]: https://github.com/jeremylongshore/intent-mail/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/jeremylongshore/intent-mail/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/jeremylongshore/intent-mail/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/jeremylongshore/intent-mail/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/jeremylongshore/intent-mail/releases/tag/v0.4.1
