@@ -5,7 +5,7 @@ Multi-surface email platform with MCP server, Discord bot, and web dashboard. AI
 ## What This Is
 
 A complete email management platform:
-- **MCP Server**: 45 tools for programmatic email access (Gmail + Outlook)
+- **MCP Server**: 47 tools for programmatic email access (Gmail + Outlook)
 - **Claude Code plugin**: install once for the `email-checkin`,
   `email-triage-actions`, and `email-project-context` skills (see below)
 - **Discord Bot**: Slash commands for inbox management
@@ -23,7 +23,7 @@ A complete email management platform:
 - Gmail connector (OAuth, History API delta sync)
 - Outlook connector (OAuth PKCE, Microsoft Graph delta sync, flag/move/folders,
   attachment extraction, delta-poll "watch")
-- 45 MCP tools with rules engine + rollback
+- 47 MCP tools with rules engine + rollback
 - AI daily-digest + live-artifact daily-review surface
 - OAuth tokens encrypted at rest (AES-256-GCM)
 - Discord bot with slash commands
@@ -76,7 +76,7 @@ npm --version   # v10 or higher
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/intent-solutions-io/intent-mail.git
+git clone https://github.com/jeremylongshore/intent-mail.git
 cd intent-mail
 npm install
 ```
@@ -164,7 +164,7 @@ Click the URL, authorize, and you're ready!
 
 ---
 
-## MCP Tools (45 Total)
+## MCP Tools (47 Total)
 
 ### Authentication & Accounts
 - `health_check` - Server status and capabilities
@@ -216,7 +216,7 @@ Click the URL, authorize, and you're ready!
 ┌────────────────▼─────────────────────────┐
 │   IntentMail MCP Server (Node.js)        │
 │   ┌────────────────────────────────────┐ │
-│   │ 45 MCP Tools                       │ │
+│   │ 47 MCP Tools                       │ │
 │   │ (search, send, rules, rollback)    │ │
 │   └──────────────┬─────────────────────┘ │
 │                  │                        │
@@ -431,7 +431,7 @@ We welcome contributions! See [Contributing Guide](000-docs/032-DR-GUID-contribu
 intent-mail/
 ├── src/
 │   ├── index.ts              # MCP server entry point
-│   ├── mcp/tools/            # 45 MCP tool implementations
+│   ├── mcp/tools/            # 47 MCP tool implementations
 │   ├── connectors/           # Gmail, Outlook, IMAP
 │   ├── rules/                # Rules engine + parser
 │   ├── storage/              # SQLite + migrations
@@ -452,7 +452,7 @@ Apache-2.0 — see [LICENSE](./LICENSE).
 ## Links
 
 - **Documentation**: [`000-docs/`](000-docs/)
-- **GitHub**: https://github.com/intent-solutions-io/intent-mail
+- **GitHub**: https://github.com/jeremylongshore/intent-mail
 - **Issues**: Use Beads task tracking (`bd list`)
 - **Security**: [Security Policy](000-docs/002-TQ-SECU-security-policy.md)
 - **FAQ**: [FAQ](000-docs/004-DR-FAQS-frequently-asked.md) - Common questions answered
