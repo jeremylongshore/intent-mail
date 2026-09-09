@@ -19,13 +19,13 @@ A complete email management platform:
 
 ## Status
 
-**v0.4.1**
+**v0.5.1**
 
 **Implemented:**
 - Gmail connector (OAuth, History API delta sync)
 - Outlook connector (OAuth PKCE, Microsoft Graph delta sync, flag/move/folders,
   attachment extraction, delta-poll "watch")
-- 47 MCP tools with rules engine + rollback
+- 47 MCP tools with a local-cache rules engine and rule-execution rollback
 - AI daily-digest + live-artifact daily-review surface
 - OAuth tokens encrypted at rest (AES-256-GCM)
 - Discord bot with slash commands
@@ -41,8 +41,10 @@ A complete email management platform:
 
 ## Use as a Claude Code plugin
 
-IntentMail ships as a self-hosted Claude Code plugin — *you* hold the OAuth
-token and the mailbox never leaves your machine.
+IntentMail ships as a self-hosted Claude Code plugin: *you* hold the OAuth
+token, and the database and full-text index stay on your machine. Requested AI
+triage, summaries, and drafts send selected message content to your configured
+cloud AI provider; choose local Ollama when content must remain local.
 
 ```bash
 git clone https://github.com/jeremylongshore/intent-mail
@@ -57,8 +59,8 @@ tools resolve as `mcp__intentmail__mail_*`. It bundles three skills:
 | Skill | What it does |
 | --- | --- |
 | `email-checkin` | Read-only daily digest — sync, triage (P1–P4 + "why"), summarize long threads, group, surface high-priority / needs-response. |
-| `email-triage-actions` | Mutating, dry-run-first — archive/flag/move/draft and two-phase staged deletes, all audited + reversible. |
-| `email-project-context` | Reads a plain-language `context/projects.md` and turns filing/priority intent into IntentMail rules (previewed before creation). |
+| `email-triage-actions` | Plans and confirms immediate provider archive/flag/move actions, generates draft text without sending, and stages local-cache deletions without claiming provider deletion. |
+| `email-project-context` | Reads `context/projects.md` and turns schema-supported intent into previewed local-cache rules; unsupported priority/provider automation remains explicit. |
 
 Set `INTENTMAIL_MASTER_KEY` (see `.env.example`) so token encryption is keyed
 explicitly in production. Configure an account with `mail_auth_start` and an AI
@@ -129,7 +131,7 @@ npm start
 You should see:
 ```
 Database initialized at ./data/intentmail.db
-intentmail-mcp-server v0.1.0 started successfully
+intentmail-mcp-server v0.5.1 started successfully
 Listening on stdio...
 ```
 
@@ -177,7 +179,7 @@ Click the URL, authorize, and you're ready!
 - `mail_sync` / `mail_sync_stats` - Delta sync + statistics
 - `mail_search` / `mail_semantic_search` / `mail_parse_query` - Search
 - `mail_get_thread` - Thread with all messages
-- `mail_send` / `mail_draft` / `mail_compose_suggest` - Compose & send
+- `mail_send` - Send mail; `mail_draft` / `mail_compose_suggest` generate text
 
 ### Daily Review & AI
 - `mail_daily_digest` - Structured daily-review payload (stats, priority groups, why)
@@ -185,20 +187,23 @@ Click the URL, authorize, and you're ready!
 - `mail_summarize` - Long-thread / message summaries
 - `mail_list_contexts` - List `@project:`/`@client:` context handles (context injection)
 
-### Actions (write-through, provider-routed)
+### Provider-routed actions
 - `mail_action` - Consolidated op: mark_read / archive / flag / move / stage_delete / unsubscribe
 - `mail_flag` - Flag / unflag (Outlook flag, Gmail STARRED)
 - `mail_move` - Move to folder (Outlook) / relabel (Gmail)
 - `mail_list_folders` - Folders (Outlook) / labels (Gmail)
-- `mail_list_labels` / `mail_apply_label` - Labels
+- `mail_list_labels` - Provider labels/folders; `mail_apply_label` changes local cached labels
 
 ### Attachments
 - `mail_list_attachments` / `mail_get_attachment` / `mail_extract_attachments` / `mail_attachment_stats`
 
-### Safe Deletion (two-phase)
+### Local-cache deletion staging
 - `mail_stage_delete` / `mail_list_staged` / `mail_unstage` / `mail_commit_deletions` / `mail_deletion_log` / `mail_find_duplicates`
 
-### Rules, Audit & Rollback
+`mail_commit_deletions` removes local database rows only. It does not delete
+messages from Gmail or Outlook.
+
+### Local-cache rules, audit, and rollback
 - `mail_list_rules` / `mail_create_rule` / `mail_delete_rule` / `mail_apply_rule`
 - `mail_get_audit_log` / `mail_rollback`
 
