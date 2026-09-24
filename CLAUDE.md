@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ Google is DISARMED in our deployment (2026-08-09)
+
+The estate migrated off all Google products (MXroute cutover 2026-07-31). The
+`GMAIL_*` and `GCP_*` keys were **removed from `.env`** on 2026-08-09, which
+turns off both env-gated Google paths in *our* running instance:
+
+- `src/ai/router.ts` — Vertex-first routing (fires only when `GCP_PROJECT` is set)
+- `src/agents/imap-connector.ts` — Gmail-first IMAP (fires only when `GMAIL_APP_PASSWORD` is set)
+
+**Do not re-add those keys.** Our email is MXroute (`SMTP_*` in `.env`).
+The Gmail/Vertex connectors remain in the *codebase* because
+`@intentsolutionsio/intentmail` is a shipped npm package and Gmail OAuth is a
+legitimate feature for external users — whether to remove it from the product
+is a separate major-version decision (see beads), not an ops cleanup.
+Owner gate outstanding: revoke the old app-password + OAuth client at the
+Google account (local deletion ≠ revocation).
+
 ## Build & Development Commands
 
 ```bash
@@ -152,7 +169,9 @@ src/
 
 Restart Claude Desktop, then: `Use the health_check tool`
 
-**OAuth Setup** (one-time):
+**OAuth Setup** (one-time — *external-user product docs; NOT our path*):
+Internal deployments use MXroute SMTP/IMAP — see the disarm note at the top.
+For external users of the shipped package who want the Gmail connector:
 1. Create OAuth credentials at [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
 2. Enable Gmail API
 3. Copy `.env.example` to `.env`, add credentials

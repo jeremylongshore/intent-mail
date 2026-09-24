@@ -79,3 +79,8 @@ archive/
 
 # Claude Code workflow worktrees (ultracode/Workflow isolation — local-only)
 .claude/worktrees/
+
+# Local secret env files (never commit; see 2026-09-24 sweep)
+*.env
+!.env.example
+!.env.sops
