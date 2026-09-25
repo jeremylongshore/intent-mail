@@ -16,6 +16,7 @@ declare const console: {
   error: (...args: unknown[]) => void;
   warn: (...args: unknown[]) => void;
 };
+// eslint-disable-next-line no-shadow-restricted-names -- ambient type for the host global, not a runtime binding
 declare const globalThis: Record<string, unknown>;
 
 import type {
