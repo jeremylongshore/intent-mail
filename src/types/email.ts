@@ -103,7 +103,7 @@ export const EmailSchema = z.object({
   references: z.string().optional(),
 
   // Sync metadata
-  rawHeaders: z.record(z.string()).optional(),
+  rawHeaders: z.record(z.string(), z.string()).optional(),
   sizeBytes: z.number().int().nonnegative().optional(),
   hasAttachments: z.boolean(),
 
@@ -214,7 +214,7 @@ export const EmailUpsertInputSchema = z.object({
   references: z.string().optional(),
 
   // Sync metadata
-  rawHeaders: z.record(z.string()).optional(),
+  rawHeaders: z.record(z.string(), z.string()).optional(),
   sizeBytes: z.number().int().nonnegative().optional(),
   hasAttachments: z.boolean().optional(),
 });

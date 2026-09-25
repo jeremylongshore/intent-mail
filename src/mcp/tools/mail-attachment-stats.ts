@@ -29,7 +29,7 @@ const MailAttachmentStatsOutputSchema = z.object({
   deduplicationSavingsHuman: z.string(),
   deduplicationRatio: z.number(),
   deduplicationPercent: z.string(),
-  byMimeType: z.record(z.object({
+  byMimeType: z.record(z.string(), z.object({
     count: z.number(),
     bytes: z.number(),
     bytesHuman: z.string(),

@@ -228,7 +228,7 @@ export const mailGetAuditLogTool = {
             },
           ],
         };
-      } catch (validationError) {
+      } catch {
         // Fallback if validation fails (should never happen)
         return {
           content: [
