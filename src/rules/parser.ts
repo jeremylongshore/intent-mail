@@ -66,7 +66,7 @@ export function parseRule(yaml: string): Rule {
     return RuleSchema.parse(parsed);
   } catch (error) {
     if (error instanceof ZodError) {
-      const messages = error.errors.map((err) => {
+      const messages = error.issues.map((err) => {
         const path = err.path.join('.');
         return `${path}: ${err.message}`;
       });
@@ -153,7 +153,7 @@ export async function parseRulesFromFile(filePath: string): Promise<Rule[]> {
         rules.push(rule);
       } catch (error) {
         if (error instanceof ZodError) {
-          const messages = error.errors.map((err) => {
+          const messages = error.issues.map((err) => {
             const path = err.path.join('.');
             return `  ${path}: ${err.message}`;
           });
