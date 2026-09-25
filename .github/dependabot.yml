@@ -21,3 +21,10 @@ updates:
       # Drop this rule once vite-plugin-pwa supports vite 8 cleanly.
       - dependency-name: "vite"
         update-types: ["version-update:semver-major"]
+      # better-sqlite3 13 requires Node >= 22; this package still declares
+      # engines node >= 20 and CI runs Node 20. Lift together with an engines bump.
+      - dependency-name: "better-sqlite3"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 is outside typescript-eslint 8's supported range (<6.1).
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
