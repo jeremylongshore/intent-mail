@@ -68,7 +68,7 @@
     "@google-cloud/vertexai": "^1.9.0",
     "@inquirer/prompts": "^8.5.2",
     "@modelcontextprotocol/sdk": "^1.25.2",
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.0.3",
     "commander": "^15.0.0",
     "conf": "^15.1.0",
     "discord.js": "^14.25.1",
