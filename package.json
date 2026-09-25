@@ -76,7 +76,7 @@
     "duckdb": "^1.4.4",
     "googleapis": "^173.0.0",
     "imap": "^0.8.19",
-    "imapflow": "^1.2.3",
+    "imapflow": "^2.0.5",
     "ink": "^7.1.0",
     "ink-select-input": "^6.0.0",
     "ink-spinner": "^5.0.0",
