@@ -15,3 +15,9 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
+    ignore:
+      # vite 8 needs @vitejs/plugin-react 6, whose optional babel peer conflicts
+      # with vite-plugin-pwa's babel 7 toolchain (npm ERESOLVE, 2026-09-25).
+      # Drop this rule once vite-plugin-pwa supports vite 8 cleanly.
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]

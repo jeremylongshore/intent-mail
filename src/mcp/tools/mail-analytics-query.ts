@@ -22,7 +22,7 @@ const MailAnalyticsQueryOutputSchema = z.object({
   success: z.boolean(),
   rowCount: z.number(),
   columns: z.array(z.string()),
-  rows: z.array(z.record(z.unknown())),
+  rows: z.array(z.record(z.string(), z.unknown())),
   duration: z.number(),
   error: z.string().optional(),
   schema: z.object({

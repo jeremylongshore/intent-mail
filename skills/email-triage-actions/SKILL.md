@@ -1,95 +1,117 @@
 ---
 name: email-triage-actions
 description: |
-  Take real inbox actions over Gmail or Outlook — mark read, archive, flag,
-  move/relabel, draft replies, and (two-phase) delete — driven by triage.
-  Safety-first: mutating operations preview a dry-run before executing,
-  drafts are created but NEVER auto-sent, deletes are staged then committed
-  separately, and every action is written to an audit log that supports
-  rollback. Use when you want to act on your inbox: clear it, archive
-  newsletters, flag what needs follow-up, draft replies to the items that
-  need a response, or file mail into folders/labels. Trigger with
-  "/email-triage-actions", "act on my inbox", "archive these", "flag for
-  follow-up", "draft replies", "clean up my inbox", "move to folder".
-allowed-tools: 'mcp__intentmail__mail_daily_digest, mcp__intentmail__mail_triage, mcp__intentmail__mail_action, mcp__intentmail__mail_flag, mcp__intentmail__mail_move, mcp__intentmail__mail_apply_label, mcp__intentmail__mail_draft, mcp__intentmail__mail_stage_delete, mcp__intentmail__mail_list_staged, mcp__intentmail__mail_unstage, mcp__intentmail__mail_commit_deletions, mcp__intentmail__mail_get_audit_log, mcp__intentmail__mail_rollback'
-version: 0.4.1
+  Review and execute bounded Gmail or Outlook actions through IntentMail,
+  including read state, archive, flag, move, draft-text generation, and local
+  deletion staging. Use when acting on selected inbox items; trigger with
+  "archive these", "flag for follow-up", "draft replies", or "clean my inbox".
+allowed-tools: 'mcp__intentmail__mail_daily_digest, mcp__intentmail__mail_action, mcp__intentmail__mail_draft, mcp__intentmail__mail_stage_delete, mcp__intentmail__mail_list_staged, mcp__intentmail__mail_unstage'
+version: 0.5.1
 author: Jeremy Longshore <jeremy@intentsolutions.io>
 license: Apache-2.0
-compatibility: 'Designed for Claude Code; ships with the intent-mail plugin, which auto-wires the local intentmail MCP server (stdio). Mutating actions write through to Gmail / Microsoft Graph using your own OAuth token. Requires a configured account and an AI provider key.'
+compatibility: 'Requires the IntentMail plugin, Node.js 20+, a configured Gmail or Outlook OAuth account, and an AI provider for draft generation. Provider actions are immediate after confirmation; draft output is text only, and deletion staging affects only the local cache.'
 tags: [email, triage, actions, archive, draft, gmail, outlook]
-argument-hint: '[what to do]'
+argument-hint: '[accountId] [scope and action]'
+model: inherit
+effort: high
 ---
 
-# Email Triage Actions — act on your inbox, safely
+# Email Triage Actions
 
 ## Overview
 
-This skill takes **real actions** on the user's mailbox. Because mistakes here
-are costly (a wrongly-deleted contract, an auto-sent half-baked reply), every
-operation runs through guardrails: dry-run before mutating, drafts are never
-auto-sent, deletes are two-phase (stage then commit), and every action is
-audited and reversible.
+Turn a scoped review into explicit provider actions with per-message receipts.
+The plan is a human-readable preview; `mail_action` itself has no dry-run flag,
+so do not call it until the user confirms the exact operation and messages.
 
 ## Prerequisites
 
-- The intent-mail plugin installed (auto-wires the local `intentmail` MCP
-  server over stdio).
-- A configured account via `mail_auth_start` (Gmail or Outlook).
-- An AI provider key for triage-driven selection.
+- Run IntentMail on Node.js 20 or newer.
+- Connect the target Gmail or Outlook account through IntentMail OAuth.
+- Configure an AI provider before requesting draft generation.
 
-## Instructions
+## Authentication and privacy
 
-1. **Decide what to act on.** Use `mcp__intentmail__mail_daily_digest` or
-   `mcp__intentmail__mail_triage` to identify candidates (e.g. all P4
-   newsletters to archive, all P1 needs-response to draft).
-2. **Propose a plan (dry-run).** "I'll archive these 9 newsletters, flag these 3
-   for follow-up, and draft replies to these 2. OK?" — list the subjects and
-   wait for confirmation.
-3. **Execute on confirmation.** Route each change through the right tool:
-   - mark read / archive / flag / move → `mcp__intentmail__mail_action` (or the
-     specific `mail_flag` / `mail_move` / `mail_apply_label`).
-   - reply needed → `mcp__intentmail__mail_draft` (draft only — never send).
-   - delete → `mcp__intentmail__mail_stage_delete`, review with
-     `mcp__intentmail__mail_list_staged`, then `mcp__intentmail__mail_commit_deletions`
-     after explicit confirmation; `mcp__intentmail__mail_unstage` reverses a
-     staging mistake.
-4. **Report results** — show the `newState` from `mail_action`, which drafts are
-   waiting for review, and what was staged for deletion.
+- Require an account connected through `mail_auth_start`; never request OAuth
+  credentials or AI keys in chat.
+- Provider actions use the user's Gmail or Microsoft Graph token. OAuth tokens
+  and the cache remain local.
+- Cloud AI providers receive content supplied for draft generation; Ollama can
+  keep inference local. No send tool is permitted by this skill.
+- See the [action safety contract](references/action-safety.md).
+
+## Workflow
+
+1. Call `mcp__intentmail__mail_daily_digest` only when candidates were not
+   already supplied. Bound the account, time window, and item count.
+2. Present a plan containing each local email ID, subject, requested operation,
+   provider effect, local effect, and known reversal. Do not hide bulk scope
+   behind phrases such as "clean everything".
+3. Obtain explicit confirmation for that exact plan. Any changed scope or
+   operation requires a new confirmation.
+4. For mark-read/unread, archive, flag/unflag, or move, call
+   `mcp__intentmail__mail_action` one message at a time and record `newState`.
+5. For a reply, call `mcp__intentmail__mail_draft`. It generates draft text;
+   it does not create a Gmail/Outlook draft and cannot send. Return the text
+   for user review without implying it was saved remotely.
+6. For deletion requests, call `mcp__intentmail__mail_stage_delete` with
+   `backupMime: true`, review via `mcp__intentmail__mail_list_staged`, and stop.
+   Staging is local only. Permanent provider deletion is not implemented or
+   permitted in this skill. Use `mcp__intentmail__mail_unstage` to cancel.
+7. Report individual successes and failures. Never retry a provider mutation
+   blindly when the result is ambiguous.
+
+## Approval boundaries
+
+- **Read:** a digest may be built within the user's stated scope.
+- **Confirm once per exact plan:** mark state, archive, flag, or move actions.
+- **Confirm before local staging:** show every message selected for staging.
+- **Not permitted:** sending mail, committing local deletions, provider
+  deletion, bulk scope expansion, or claiming an audit/rollback receipt that
+  direct actions do not produce.
+
+## Validation
+
+- Match every result's email ID and operation to the approved plan.
+- Treat `success` plus the returned `newState` as the receipt for direct
+  actions; do not claim all direct actions are in the rule audit log.
+- Verify generated draft text contains no invented recipients, commitments, or
+  attachments before returning it.
+- Verify staged count and IDs with `mail_list_staged`; never equate staging with
+  provider deletion.
 
 ## Output
 
-A summary of what changed: per-email new state (read/flagged/labels/staged),
-drafts created and awaiting the user's review/send, and any emails staged for
-deletion pending commit. If the user says "undo that", use
-`mcp__intentmail__mail_get_audit_log` + `mcp__intentmail__mail_rollback`.
+Return the approved scope, operation per message, provider/local effect,
+`newState` receipts, draft text awaiting review, staged IDs and retention,
+failures, ambiguous outcomes, and any manual provider-side step still required.
 
 ## Error Handling
 
-- **Never send email.** `mail_draft` creates a draft only; no send tool is in
-  this skill's allow-list. Present drafts for the user to send themselves.
-- **Never hard-delete.** Always stage → confirm → commit. Reverse a bad staging
-  with `mail_unstage` before commit; reverse a committed action via the audit
-  log + `mail_rollback`.
-- **Never exceed scope.** Act only on what the user approved; destructive ops
-  always confirm first. Under-acting is safe; over-acting is not.
-- **Uncertain importance** → leave the email and say so.
-- **Not authenticated** → tell the user to run `mail_auth_start`.
+- **Not authenticated:** stop and direct the user to the explicit OAuth flow.
+- **Ambiguous or partial provider result:** stop that item and report it; do not
+  assume the mutation failed or succeeded.
+- **Unsupported send/delete/unsubscribe request:** explain the current boundary.
+  The consolidated tool's `unsubscribe` operation only archives today, so this
+  skill does not represent it as an unsubscribe.
+- **Bad draft:** discard the output and ask for corrected facts or tone; never
+  send or claim a provider draft exists.
+- **Wrong staged item:** unstage it before doing anything else.
 
 ## Examples
 
-User: "clean up my inbox." →
-1. `mail_daily_digest` to find P4 newsletters + read-and-done items.
-2. Propose: "Archive these 9, flag these 3 for follow-up, draft replies to these
-   2 — OK?" (list subjects).
-3. On yes: `mail_action {op:'archive'}` for each newsletter, `mail_action
-   {op:'flag'}` for the follow-ups, `mail_draft {mode:'reply'}` for the two.
-4. Report the new states + the two drafts waiting for review.
+```text
+For account 1, show the five newsletters you propose to archive. Wait for my
+confirmation, then archive them one at a time and report each newState.
+```
 
-User: "delete all the spam." → `mail_stage_delete` the candidates →
-`mail_list_staged` to show them → on confirmation `mail_commit_deletions`.
+```text
+Generate reply text for email 42 in a concise professional tone. Do not save or
+send it. Return the draft and any uncertain facts for my review.
+```
 
 ## Resources
 
-- Read surface / digest: `email-checkin` skill, `mail_daily_digest`.
-- Action engine: `src/connectors/email-actions.ts` (shared by `mail_action`).
-- Two-phase delete: `src/storage/services/deletion-staging.ts`.
+- [Action safety contract](references/action-safety.md)
+- Provider action implementation: `src/connectors/email-actions.ts`
+- Deletion staging: `src/storage/services/deletion-staging.ts`

@@ -290,10 +290,10 @@ export async function executeRule(
     // Still create audit log entry for failed executions
     if (stateBefore) {
       if (!rule.id) {
-        throw new Error('Cannot create audit log: rule.id is required');
+        throw new Error('Cannot create audit log: rule.id is required', { cause: error });
       }
       if (!email.id) {
-        throw new Error('Cannot create audit log: email.id is required');
+        throw new Error('Cannot create audit log: email.id is required', { cause: error });
       }
       createAuditLogEntry(rule.id, email.id, result, stateBefore, stateAfter);
     }

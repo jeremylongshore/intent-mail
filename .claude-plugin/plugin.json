@@ -1,7 +1,7 @@
 {
   "name": "intent-mail",
-  "version": "0.4.1",
-  "description": "Self-hosted email triage for Claude Code over Gmail and Outlook. Daily check-in digest (P1–P4 priority + why + needs-response), long-thread summaries, group-by-category, and real actions (read/archive/delete/draft/flag/move) through Gmail and Microsoft Graph — you hold the OAuth token, no third party sees your mailbox.",
+  "version": "0.5.1",
+  "description": "Self-hosted email triage for Claude Code over Gmail and Outlook. OAuth tokens and the local cache stay on your machine; configured cloud AI providers receive only the message content needed for requested analysis.",
   "author": {
     "name": "Jeremy Longshore",
     "email": "jeremy@intentsolutions.io"
@@ -23,8 +23,8 @@
   "mcpServers": {
     "intentmail": {
       "name": "intentmail",
-      "description": "Self-hosted IntentMail MCP server: Gmail + Outlook OAuth, delta sync, AI triage/summarize/rules, daily-digest, and write actions. Runs locally over stdio; the mailbox never leaves your machine.",
-      "version": "0.4.1",
+      "description": "Self-hosted IntentMail MCP server for Gmail and Outlook OAuth, delta sync, AI-assisted review, local rules, and bounded provider actions. Runs locally over stdio; cloud AI features send selected message content to the configured provider.",
+      "version": "0.5.1",
       "enabled": true,
       "transport": "stdio",
       "command": "node",

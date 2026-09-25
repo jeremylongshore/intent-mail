@@ -277,7 +277,7 @@ export class GmailSync {
     let messagesDeleted = 0;
     let labelsChanged = 0;
     let pageToken: string | undefined;
-    let currentHistoryId = startHistoryId;
+    let currentHistoryId: string;
     const startTime = new Date().toISOString();
 
     const processedMessageIds = new Set<string>();

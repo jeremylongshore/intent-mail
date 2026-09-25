@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Rebuilt the three public Agent Skills around the current v0.5.1 MCP
+  contracts, explicit OAuth/AI data boundaries, bounded approvals, and
+  verifiable output receipts.
+- Corrected public documentation for draft generation, provider-routed direct
+  actions, local-cache rules and deletion staging, and rule-only rollback.
+- Aligned the plugin, MCP, skill, and runtime server version surfaces with the
+  released package version.
+- Updated Nodemailer, Puppeteer, and Vitest to patched releases and declared
+  the direct native/browser install scripts required by clean npm installs.
+
+### Added
+
+- Regression tests for published skill metadata, safety claims, permissions,
+  supporting references, and cross-surface version consistency.
+
 ## [0.5.1] - 2026-06-30
 
 ### Fixed

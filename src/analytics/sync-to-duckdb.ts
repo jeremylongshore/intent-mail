@@ -140,7 +140,7 @@ export async function syncAllEmails(accountId?: number): Promise<SyncResult> {
         `, batchParams);
 
         emailsSynced += batch.length;
-      } catch (error) {
+      } catch {
         // On batch failure, fall back to individual inserts to identify problematic rows
         for (const email of batch) {
           try {
@@ -231,7 +231,7 @@ export async function syncAllEmails(accountId?: number): Promise<SyncResult> {
         `, batchParams);
 
         attachmentsSynced += batch.length;
-      } catch (error) {
+      } catch {
         // Fall back to individual inserts on batch failure
         for (const attachment of batch) {
           try {

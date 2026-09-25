@@ -113,7 +113,6 @@ export class OutlookSync {
 
     let messagesAdded = 0;
     let nextPageToken: string | undefined;
-    let deltaLink = '';
 
     // Fetch messages in pages
     while (messagesAdded < maxMessages) {
@@ -154,7 +153,7 @@ export class OutlookSync {
 
     // Get delta link for future incremental syncs
     const deltaResponse = await this.client.getDelta();
-    deltaLink = deltaResponse['@odata.deltaLink'] || '';
+    const deltaLink = deltaResponse['@odata.deltaLink'] || '';
 
     return {
       messagesAdded,
@@ -179,7 +178,7 @@ export class OutlookSync {
     let messagesDeleted = 0;
     const labelsChanged = 0;
     let currentDeltaLink = deltaLink;
-    let newDeltaLink = '';
+    let newDeltaLink: string;
 
     // Fetch delta changes
     while (true) {

@@ -1,107 +1,104 @@
 ---
 name: email-checkin
 description: |
-  Read-only daily email check-in over Gmail or Outlook. Syncs the latest
-  messages into the local store, then triages them (P1–P4 priority with a
-  one-line "why", action-type, urgency signals, and detected deadlines),
-  summarizes long threads, groups by category, and surfaces the
-  high-priority and needs-response items as a single digest. Takes NO
-  actions — purely a morning "what needs me today" briefing. Use when you
-  want to check your inbox, get a daily digest, see what is high priority or
-  needs a response, or catch up on long email threads. Trigger with
-  "/email-checkin", "check my inbox", "daily email digest", "what needs a
-  response", "what's high priority in my email".
+  Build a read-only Gmail or Outlook briefing from IntentMail's local cache,
+  including P1-P4 priority, response needs, deadlines, and thread summaries.
+  Use when checking an inbox or catching up on mail; trigger with "check my
+  inbox", "daily email digest", or "what needs a response?".
 allowed-tools: 'mcp__intentmail__mail_list_accounts, mcp__intentmail__mail_sync, mcp__intentmail__mail_daily_digest, mcp__intentmail__mail_triage, mcp__intentmail__mail_summarize, mcp__intentmail__mail_search'
-version: 0.4.1
+version: 0.5.1
 author: Jeremy Longshore <jeremy@intentsolutions.io>
 license: Apache-2.0
-compatibility: 'Designed for Claude Code; ships with the intent-mail plugin, which auto-wires the local intentmail MCP server (stdio). Requires a configured Gmail or Outlook account (mail_auth_start) and an AI provider key. Self-hosted — the mailbox never leaves your machine.'
+compatibility: 'Requires the IntentMail plugin, Node.js 20+, a configured Gmail or Outlook OAuth account, and an AI provider for triage. OAuth tokens and the cache stay local; a configured cloud AI provider receives the message content needed for requested analysis.'
 tags: [email, inbox, triage, digest, gmail, outlook]
-argument-hint: '[accountId | email]'
+argument-hint: '[accountId | email] [unread | hours]'
+model: inherit
+effort: medium
 ---
 
-# Email Check-in — your read-only daily inbox briefing
+# Email Check-in
 
 ## Overview
 
-A morning briefing over your own mailbox. This skill **reads and reasons; it
-never mutates.** No archiving, no sending, no flag changes — that is the
-`email-triage-actions` skill's job. The point is a fast, honest "what actually
-needs me today" without touching anything. It produces a stats header,
-priority-ranked category groups, and a per-email line carrying the priority,
-the **"why"**, action-type, urgency signals, any deadline, and a one-line
-summary (long threads collapsed to a `summarized ×N` line).
+Sync mail into IntentMail's local store and return one scoped, priority-ranked
+briefing. This workflow never changes provider message state; sync does update
+the local cache and may refresh locally stored OAuth tokens.
 
 ## Prerequisites
 
-- The intent-mail plugin installed (auto-wires the local `intentmail` MCP
-  server over stdio).
-- A configured account via `mail_auth_start` (Gmail or Outlook).
-- An AI provider key (Anthropic / OpenAI / Groq, or local Ollama) — triage and
-  summarization are AI-backed.
+- Run IntentMail on Node.js 20 or newer.
+- Connect at least one Gmail or Outlook account through IntentMail OAuth.
+- Configure an AI provider for generated triage and summaries.
 
-## Instructions
+## Authentication and privacy
 
-1. **Pick the account.** If the user named one, resolve it; otherwise call
-   `mcp__intentmail__mail_list_accounts` and use the active account (ask if
-   there are several).
-2. **Sync first.** Call `mcp__intentmail__mail_sync` for that account so the
-   digest reflects the latest mail (initial sync if it has never synced, delta
-   otherwise — the tool decides).
-3. **Build the digest.** Call `mcp__intentmail__mail_daily_digest` with the
-   account id. This one call returns the full structured payload (stats, groups,
-   per-email priority/why/summary/deadline). Prefer it over manual assembly.
-4. **Render it** as a clean, scannable briefing. Lead with the stats header,
-   then the high-priority and needs-response items, then the rest grouped by
-   category. Keep each item to its priority + why + one-line summary.
+- Require an account previously connected through `mail_auth_start`; this
+  skill does not run OAuth or request secrets in chat.
+- OAuth tokens and indexed mail remain in the self-hosted IntentMail process.
+- Anthropic, OpenAI, Groq, Cerebras, or Vertex receives the message/thread
+  content needed for requested AI triage or summaries. Ollama keeps inference
+  local. State that boundary if the user asks about privacy.
+- See [authentication and data boundaries](references/auth-and-privacy.md).
 
-If the digest tool is unavailable, assemble the same picture manually with
-`mcp__intentmail__mail_triage` (priority + why + action-type),
-`mcp__intentmail__mail_summarize` (long-thread summaries), and
-`mcp__intentmail__mail_search` (to scope the window, e.g. unread / last 24h).
+## Workflow
+
+1. Resolve the account. If the user supplied no ID, call
+   `mcp__intentmail__mail_list_accounts`; ask which account when several are
+   active. Never guess an account from message content.
+2. Confirm the requested window and cap. Default to the digest tool's 50-item
+   limit; use `unreadOnly` or `sinceHours` when the request supplies that scope.
+3. Call `mcp__intentmail__mail_sync` for the selected account. Do not set
+   `forceInitial: true` or raise `maxMessages` without explaining the broader
+   fetch and receiving approval.
+4. Call `mcp__intentmail__mail_daily_digest` with the account and scope. Prefer
+   its structured payload over rebuilding the digest manually.
+5. If the digest tool is unavailable, use `mcp__intentmail__mail_search` for
+   the bounded window, `mcp__intentmail__mail_triage` for classification, and
+   `mcp__intentmail__mail_summarize` only for threads that need compression.
+6. Render high-priority and needs-response items first, then the remaining
+   category groups. Preserve uncertainty and citations from tool output.
+
+## Validation
+
+- Confirm the returned account ID matches the selected account.
+- Report sync type, added/deleted/label-change counts, and sync timestamp.
+- Distinguish provider-deleted items reported by sync from actions taken by
+  this skill; the skill itself does not delete or archive mail.
+- Do not claim an empty digest means an empty provider inbox when sync failed.
 
 ## Output
 
-A single digest, rendered for the user:
-
-- **Stats header** — e.g. `45 new · 12 need response · 3 high-priority`.
-- **Priority-ranked groups** — category sections (Work, Clients, Finance, …),
-  each ordered by priority.
-- **Per-email line** — priority chip (P1–P4), the one-line "why", action-type,
-  urgency signals, any deadline, and a one-line summary. Long threads collapse
-  to a `summarized ×N` line.
+Return the account and time window, sync receipt, digest counts, P1-P4 groups,
+response needs, detected deadlines, concise summaries, uncertainty, and any
+failed or omitted stage. Do not expose message bodies beyond what the user
+asked to review.
 
 ## Error Handling
 
-- **No accounts / not authenticated** → tell the user to run `mail_auth_start`
-  first; do not guess.
-- **AI provider not configured** → report that triage/summary need an AI key;
-  fall back to a flat unread list from `mail_search` rather than failing silently.
-- **Action requested** → this skill is read-only; if the user asks to
-  archive/flag/delete/draft/move, hand off to `email-triage-actions` (those
-  tools are not in this skill's allow-list).
-- **Uncertain priority** → say so rather than inventing urgency.
+- **No account or expired OAuth:** stop and direct the user to the explicit
+  IntentMail authentication flow; never solicit a token.
+- **AI provider unavailable:** return a bounded `mail_search` result and label
+  it untriaged rather than inventing priorities.
+- **Partial sync or provider rate limit:** report the tool error and the last
+  successful sync time; do not present cached results as current.
+- **Action requested:** stop and hand off to `email-triage-actions`; no provider
+  write tools are allowed here.
+- **Uncertain priority or deadline:** show the uncertainty and source text.
 
 ## Examples
 
-> **Inbox check-in — 45 new · 12 need response · 3 high-priority**
->
-> **🔴 High priority**
-> - **P1 · Acme contract redline** — *why: client + hard deadline tomorrow 5pm.*
->   They want section 4 changed before signing. (needs response)
-> - **P1 · Wire confirmation** — *why: finance + money movement.* Bank flagged
->   the transfer for verification.
->
-> **🟡 Needs response (10 more)** …
->
-> **Work (18)** · **Newsletters (9, summarized)** …
+```text
+Check my Outlook inbox for unread mail from the last 24 hours. Sync normally,
+then show P1/P2 and needs-response items first. Do not change message state.
+```
 
-User: "what's high priority in my email this morning?" → sync the active
-account, call `mail_daily_digest`, render the high-priority + needs-response
-groups first.
+```text
+Summarize the active Gmail account with the default 50-item cap. If AI triage
+is unavailable, return an explicitly untriaged unread list.
+```
 
 ## Resources
 
-- `mail_daily_digest` payload shape: `src/ai/daily-digest.ts` (`DailyDigest`).
-- Visual rendering: `artifacts/daily-review.html`.
-- Companion mutating skill: `email-triage-actions`.
+- [Authentication and data boundaries](references/auth-and-privacy.md)
+- Digest contract: `src/ai/daily-digest.ts`
+- Companion provider-write workflow: `email-triage-actions`

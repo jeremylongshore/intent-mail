@@ -51,7 +51,7 @@ npx vitest run src/rules/validator.test.ts
 
 IntentMail is a multi-surface email platform with three entry points:
 
-1. **MCP Server** (`src/index.ts`) - 24 MCP tools for Claude Desktop integration
+1. **MCP Server** (`src/index.ts`) - 47 MCP tools for Claude Desktop integration
 2. **CLI/TUI** (`src/cli/`) - Terminal interface using Ink (React for CLI)
 3. **Discord Bot** (`src/discord/`) - Slash commands for inbox management
 
@@ -62,7 +62,7 @@ IntentMail is a multi-surface email platform with three entry points:
 │  Entry Points: MCP Server | CLI/TUI | Discord Bot       │
 ├─────────────────────────────────────────────────────────┤
 │  MCP Tools (src/mcp/tools/)                             │
-│  - 24 tools: auth, sync, search, send, rules, etc.     │
+│  - 47 tools: auth, sync, search, send, rules, etc.     │
 ├─────────────────────────────────────────────────────────┤
 │  AI Layer (src/ai/)                                     │
 │  - Multi-provider: Vertex, OpenAI, Anthropic, Ollama   │
@@ -180,9 +180,11 @@ For external users of the shipped package who want the Gmail connector:
 ## Infrastructure
 
 **Self-hosted — there is no cloud deploy pipeline.** Run the MCP server locally
-(`npm run build && intentmail serve`) or in Docker; you hold the OAuth token and
-the mailbox never leaves your machine. (The former GCP Cloud Run / Terraform
-deploy machinery was removed once the project moved off GCP.)
+(`npm run build && intentmail serve`) or in Docker. OAuth tokens, the database,
+and the full-text index stay local; configured cloud AI providers receive the
+message content needed for requested triage, summary, or draft operations.
+(The former GCP Cloud Run / Terraform deploy machinery was removed once the
+project moved off GCP.)
 
 **CI/CD** (`.github/workflows/`):
 - `ci.yml` - lint, typecheck, test:cov, build on PRs (blocking)
@@ -224,7 +226,7 @@ This repo participates in the **Intent Solutions Testing SOP** per `~/.claude/CL
 ## Claude Code Plugin (`.claude-plugin/`)
 
 This repo IS a Claude Code plugin (self-hosted, single-repo — the user holds the
-OAuth token; the mailbox never leaves their machine).
+OAuth token and local data; cloud AI features have an explicit content boundary).
 
 - **Manifest**: `.claude-plugin/plugin.json`. The `mcpServers` key is
   **`intentmail`** (NOT the internal server name) — so tools resolve as
@@ -234,14 +236,17 @@ OAuth token; the mailbox never leaves their machine).
   `npm ci --omit=dev && npm run build` so `dist/` exists.
 - **Skills** (`skills/`, each with full 8-field IS frontmatter):
   - `email-checkin` — read-only daily digest (sync → triage → summarize → group).
-  - `email-triage-actions` — mutating, dry-run-first; drafts never auto-send;
-    two-phase staged deletes; audited + reversible.
-  - `email-project-context` — reads plain-language `context/projects.md` → rules.
+  - `email-triage-actions` — explicit-plan provider writes; draft text never
+    auto-sends; provider deletion is not claimed; direct actions are not
+    universally audited or reversible.
+  - `email-project-context` — reads plain-language `context/projects.md` and
+    creates schema-supported local-cache rules after confirmation.
 - **Context**: `context/projects.example.md` (copy to `context/projects.md`).
 - **Visual surface**: `artifacts/daily-review.html` renders the
   `mail_daily_digest` payload as an interactive live artifact.
 
-**Validation before marketplace submission**: `npm run build` →
+**Validation before publication**: `npm run build` →
 `/validate-skillmd --marketplace` per skill → `/validate-mcp` →
-`/validate-plugin`. The marketplace listing lives in `claude-code-plugins`
-(`.claude-plugin/marketplace.json`, category `mcp`).
+`/validate-plugin`. The standalone public repository is the skills.sh source;
+the canonical catalog for the Claude plugin is maintained separately in the
+Tons of Skills marketplace when listed there.
