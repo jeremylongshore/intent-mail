@@ -13,7 +13,7 @@ Multi-surface email platform with MCP server, Discord bot, and web dashboard. AI
 ## What This Is
 
 A complete email management platform:
-- **MCP Server**: 47 tools for programmatic email access (Gmail + Outlook)
+- **MCP Server**: 45 tools for programmatic email access (Gmail + Outlook)
 - **Claude Code plugin**: install once for the `email-checkin`,
   `email-triage-actions`, and `email-project-context` skills (see below)
 - **Discord Bot**: Slash commands for inbox management
@@ -31,7 +31,7 @@ A complete email management platform:
 - Gmail connector (OAuth, History API delta sync)
 - Outlook connector (OAuth PKCE, Microsoft Graph delta sync, flag/move/folders,
   attachment extraction, delta-poll "watch")
-- 47 MCP tools with a local-cache rules engine and rule-execution rollback
+- 45 MCP tools with a local-cache rules engine and rule-execution rollback
 - AI daily-digest + live-artifact daily-review surface
 - OAuth tokens encrypted at rest (AES-256-GCM)
 - Discord bot with slash commands
@@ -174,7 +174,7 @@ Click the URL, authorize, and you're ready!
 
 ---
 
-## MCP Tools (47 Total)
+## MCP Tools (45 Total)
 
 ### Authentication & Accounts
 - `health_check` - Server status and capabilities
@@ -229,7 +229,7 @@ messages from Gmail or Outlook.
 ┌────────────────▼─────────────────────────┐
 │   IntentMail MCP Server (Node.js)        │
 │   ┌────────────────────────────────────┐ │
-│   │ 47 MCP Tools                       │ │
+│   │ 45 MCP Tools                       │ │
 │   │ (search, send, rules, rollback)    │ │
 │   └──────────────┬─────────────────────┘ │
 │                  │                        │
@@ -444,7 +444,7 @@ We welcome contributions! See [Contributing Guide](000-docs/032-DR-GUID-contribu
 intent-mail/
 ├── src/
 │   ├── index.ts              # MCP server entry point
-│   ├── mcp/tools/            # 47 MCP tool implementations
+│   ├── mcp/tools/            # 45 MCP tool implementations
 │   ├── connectors/           # Gmail, Outlook, IMAP
 │   ├── rules/                # Rules engine + parser
 │   ├── storage/              # SQLite + migrations

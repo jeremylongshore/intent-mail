@@ -9,9 +9,9 @@ Thanks for your interest! IntentMail is in active development - we're building t
 
 ## Quick Links
 
-- **Project Overview:** See [README.md](README.md) for status and planned capabilities
-- **Setup Guide:** See [SETUP.md](SETUP.md) for infrastructure configuration
-- **Security:** See [SECURITY.md](SECURITY.md) for vulnerability reporting
+- **Project Overview:** See [README.md](../README.md) for status and planned capabilities
+- **Setup Guide:** See [SETUP.md](033-DR-GUID-setup.md) for infrastructure configuration
+- **Security:** See [SECURITY.md](../SECURITY.md) for vulnerability reporting
 - **Beads Tracking:** Use `bd list` to see all epics and tasks (16 epics, 81 tasks planned)
 
 **Note:** Detailed planning documents (epic roadmap, architecture, MCP specs) will be added during Phase 3 implementation.
@@ -143,7 +143,7 @@ MCP tools are the public API for Claude Code users. Changes here are **breaking 
 - Output sanitization in logs (redact tokens, emails)
 - Safe defaults (least privilege, fail closed)
 
-See [SECURITY.md](SECURITY.md) for vulnerability reporting.
+See [SECURITY.md](../SECURITY.md) for vulnerability reporting.
 
 ## Development Setup
 
@@ -189,7 +189,7 @@ Rules Engine (E6): YAML rules + audit
 
 ## Code of Conduct
 
-This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you're expected to uphold this code.
+This project adheres to the [Contributor Covenant Code of Conduct](../CODE_OF_CONDUCT.md). By participating, you're expected to uphold this code.
 
 ## License
 

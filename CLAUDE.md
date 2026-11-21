@@ -51,7 +51,7 @@ npx vitest run src/rules/validator.test.ts
 
 IntentMail is a multi-surface email platform with three entry points:
 
-1. **MCP Server** (`src/index.ts`) - 47 MCP tools for Claude Desktop integration
+1. **MCP Server** (`src/index.ts`) - 45 MCP tools for Claude Desktop integration
 2. **CLI/TUI** (`src/cli/`) - Terminal interface using Ink (React for CLI)
 3. **Discord Bot** (`src/discord/`) - Slash commands for inbox management
 
@@ -62,7 +62,7 @@ IntentMail is a multi-surface email platform with three entry points:
 │  Entry Points: MCP Server | CLI/TUI | Discord Bot       │
 ├─────────────────────────────────────────────────────────┤
 │  MCP Tools (src/mcp/tools/)                             │
-│  - 47 tools: auth, sync, search, send, rules, etc.     │
+│  - 45 tools: auth, sync, search, send, rules, etc.     │
 ├─────────────────────────────────────────────────────────┤
 │  AI Layer (src/ai/)                                     │
 │  - Multi-provider: Vertex, OpenAI, Anthropic, Ollama   │

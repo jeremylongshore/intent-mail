@@ -123,5 +123,5 @@ See `.env.example` for available environment variables.
 ## Links
 
 - [MCP Specification](https://modelcontextprotocol.io/)
-- [IntentMail Architecture](./README.md#architecture)
-- [Contributing](./CONTRIBUTING.md)
+- [IntentMail Architecture](../README.md#architecture)
+- [Contributing](../CONTRIBUTING.md)
