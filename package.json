@@ -1,7 +1,7 @@
 {
   "name": "@intentsolutionsio/intentmail",
   "version": "0.5.1",
-  "description": "AI-powered email CLI with TUI - supports Vertex AI, OpenAI, Anthropic, Ollama",
+  "description": "Self-hosted email platform for Gmail and Outlook: MCP server, Claude Code plugin, CLI, Discord bot and web dashboard, with AI triage via OpenAI, Anthropic, Vertex AI or local Ollama",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

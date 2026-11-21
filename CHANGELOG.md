@@ -22,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Nodemailer, Puppeteer, and Vitest to patched releases and declared
   the direct native/browser install scripts required by clean npm installs.
 
+### Fixed
+
+- README and CLAUDE.md said 47 MCP tools; the server registers 45 (44
+  `mail_*` tools plus `health_check`), matching the README tool list.
+- Broken relative links in the MCP usage guide, contributing guide and FAQ
+  (`000-docs/007`, `032`, `004`) now point at the repository-root files.
+- `package.json` description now describes the current platform (MCP server,
+  plugin, CLI, Discord bot, dashboard) instead of the original CLI/TUI.
+
 ### Added
 
 - Regression tests for published skill metadata, safety claims, permissions,

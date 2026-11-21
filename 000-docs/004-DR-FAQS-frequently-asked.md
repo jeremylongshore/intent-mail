@@ -92,7 +92,7 @@ console.log(result);
 - ✅ Gmail API quota: 1 billion quota units/day (free tier)
 - ✅ No credit card required for personal projects
 
-**Step-by-step guide:** See [README.md](README.md#2-set-up-gmail-oauth-one-time)
+**Step-by-step guide:** See [README.md](../README.md#2-set-up-gmail-oauth-one-time)
 
 ### Q: Do I need to deploy to Google Cloud?
 
@@ -363,7 +363,7 @@ bd create "Bug: ..." -p 1 --description "..."
 
 ### Q: Can I add a new email provider?
 
-**Yes!** See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+**Yes!** See [CONTRIBUTING.md](../CONTRIBUTING.md) for:
 
 - Provider connector architecture
 - OAuth flow implementation
@@ -421,4 +421,4 @@ bd create "Bug: ..." -p 1 --description "..."
 
 ---
 
-**More questions?** Open an issue or check the [documentation](./000-docs/).
+**More questions?** Open an issue or check the [documentation](./).
